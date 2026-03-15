@@ -16,7 +16,6 @@ subprojects {
     apply plugin: 'io.jmix'
 
     repositories {
-        mavenLocal()
         mavenCentral()
         maven {
             url = 'https://global.repo.jmix.io/repository/public'
@@ -42,25 +41,6 @@ subprojects {
 
     artifacts {
         archives sourcesJar
-    }
-
-    publishing {
-        repositories {
-            maven {
-                url = 'https://myrepo/releases/'
-                credentials {
-                    username rootProject.hasProperty('uploadUser') ? rootProject['uploadUser'] : 'admin'
-                    password rootProject.hasProperty('uploadPassword') ? rootProject['uploadPassword'] : 'admin'
-                }
-                allowInsecureProtocol = true
-            }
-        }
-        publications {
-            javaMaven(MavenPublication) {
-                artifactId = archName
-                from components.java
-            }
-        }
     }
 
     // remove after https://youtrack.jetbrains.com/issue/IDEA-227215 is fixed
