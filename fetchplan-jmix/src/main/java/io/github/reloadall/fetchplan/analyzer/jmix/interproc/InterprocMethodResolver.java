@@ -3,7 +3,6 @@ package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,6 +19,7 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
+import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,12 +27,18 @@ import org.springframework.stereotype.Component;
 public class InterprocMethodResolver {
 
     private final SpringBeanImplementationResolver springBeanImplementationResolver;
+    private final SourceRootsResolver sourceRootsResolver;
 
     @Autowired
-    public InterprocMethodResolver(SpringBeanImplementationResolver springBeanImplementationResolver) {
+    public InterprocMethodResolver(SpringBeanImplementationResolver springBeanImplementationResolver,
+                                   SourceRootsResolver sourceRootsResolver) {
         this.springBeanImplementationResolver = Objects.requireNonNull(
                 springBeanImplementationResolver,
                 "springBeanImplementationResolver is null"
+        );
+        this.sourceRootsResolver = Objects.requireNonNull(
+                sourceRootsResolver,
+                "sourceRootsResolver is null"
         );
     }
 
@@ -52,7 +58,7 @@ public class InterprocMethodResolver {
 
         String concreteTargetClassName = concreteTargetClassNameOpt.get();
 
-        List<Path> sourceRoots = findMainJavaFolders(resolveProjectRoot());
+        List<Path> sourceRoots = sourceRootsResolver.resolveMainJavaSourceRoots();
         Path javaFile = findJavaFile(sourceRoots, concreteTargetClassName);
         if (javaFile == null) {
             return Optional.empty();
@@ -253,26 +259,6 @@ public class InterprocMethodResolver {
         }
 
         return value.trim();
-    }
-
-    private Path resolveProjectRoot() {
-        return Paths.get(System.getProperty("user.dir"))
-                .toAbsolutePath()
-                .normalize();
-    }
-
-    private List<Path> findMainJavaFolders(Path root) {
-        try (var stream = Files.walk(root)) {
-            return stream
-                    .filter(Files::isDirectory)
-                    .filter(path -> path.toString().replace("\\", "/").endsWith("src/main/java"))
-                    .map(Path::toAbsolutePath)
-                    .map(Path::normalize)
-                    .distinct()
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to scan source roots: " + root, e);
-        }
     }
 
     private Path findJavaFile(List<Path> sourceRoots, String targetClassName) {

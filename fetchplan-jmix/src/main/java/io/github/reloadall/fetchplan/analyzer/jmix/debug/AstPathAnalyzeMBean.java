@@ -1,13 +1,9 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.debug;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
 import io.github.reloadall.fetchplan.analyzer.jmix.compare.PathComparator;
@@ -23,6 +19,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.path.PathTreeFlattener;
 import io.github.reloadall.fetchplan.analyzer.jmix.report.AnalysisReport;
 import io.github.reloadall.fetchplan.analyzer.jmix.report.AnalysisReportFormatter;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceMethodResolver;
+import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.jmix.core.FetchPlan;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +46,7 @@ public class AstPathAnalyzeMBean {
     private final PathComparator pathComparator;
     private final RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor;
     private final AnalysisReportFormatter analysisReportFormatter;
+    private final SourceRootsResolver sourceRootsResolver;
 
     @Autowired
     public AstPathAnalyzeMBean(SourceMethodResolver sourceMethodResolver,
@@ -61,7 +59,8 @@ public class AstPathAnalyzeMBean {
                                FetchPlanExtractor fetchPlanExtractor,
                                PathComparator pathComparator,
                                RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor,
-                               AnalysisReportFormatter analysisReportFormatter) {
+                               AnalysisReportFormatter analysisReportFormatter,
+                               SourceRootsResolver sourceRootsResolver) {
         this.sourceMethodResolver = sourceMethodResolver;
         this.astPathEngine = astPathEngine;
         this.rawTreePrinter = rawTreePrinter;
@@ -73,6 +72,7 @@ public class AstPathAnalyzeMBean {
         this.pathComparator = pathComparator;
         this.rawTreeUncertaintyExtractor = rawTreeUncertaintyExtractor;
         this.analysisReportFormatter = analysisReportFormatter;
+        this.sourceRootsResolver = sourceRootsResolver;
     }
 
     @ManagedOperation(description = "Run the AST parser and return RawTree")
@@ -160,7 +160,7 @@ public class AstPathAnalyzeMBean {
         Objects.requireNonNull(rootParamName, "rootParamName is null");
         Objects.requireNonNull(rootParamType, "rootParamType is null");
 
-        List<Path> javaDirs = findMainJavaFolders(resolveProjectRoot());
+        List<Path> javaDirs = sourceRootsResolver.resolveMainJavaSourceRoots();
 
         MethodDeclaration method = sourceMethodResolver.resolve(
                 javaDirs,
@@ -171,26 +171,6 @@ public class AstPathAnalyzeMBean {
         );
 
         return astPathEngine.analyze(method, rootParamName);
-    }
-
-    private Path resolveProjectRoot() {
-        return Paths.get(System.getProperty("user.dir"))
-                .toAbsolutePath()
-                .normalize();
-    }
-
-    public static List<Path> findMainJavaFolders(Path root) {
-        try (var stream = Files.walk(root)) {
-            return stream
-                    .filter(Files::isDirectory)
-                    .filter(path -> path.toString().replace("\\", "/").endsWith("src/main/java"))
-                    .map(Path::toAbsolutePath)
-                    .map(Path::normalize)
-                    .distinct()
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to scan source roots: " + root, e);
-        }
     }
 
 }
