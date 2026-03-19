@@ -39,11 +39,13 @@ public class InterprocArgumentBinder {
                     context
             );
 
-            if (argumentNode == null) {
-                return Optional.empty();
+            if (argumentNode != null) {
+                bindings.put(parameter.getNameAsString(), argumentNode);
             }
+        }
 
-            bindings.put(parameter.getNameAsString(), argumentNode);
+        if (bindings.isEmpty()) {
+            return Optional.empty();
         }
 
         return Optional.of(bindings);
