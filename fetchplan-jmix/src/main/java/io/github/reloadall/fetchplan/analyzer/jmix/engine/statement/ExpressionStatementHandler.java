@@ -1,7 +1,9 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.statement;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AssignExpr;
@@ -15,6 +17,8 @@ import com.github.javaparser.ast.stmt.Statement;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementHandleResult;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.UnknownBreakPolicy;
 import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocCallPlan;
 import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocCallPlanner;
@@ -32,7 +36,6 @@ public class ExpressionStatementHandler implements StatementHandler {
     private final UnknownBreakPolicy unknownBreakPolicy;
     private final InterprocCallPlanner interprocCallPlanner;
 
-    @Autowired
     public ExpressionStatementHandler(UnknownBreakPolicy unknownBreakPolicy,
                                       InterprocCallPlanner interprocCallPlanner) {
         this.unknownBreakPolicy = unknownBreakPolicy;
@@ -102,15 +105,15 @@ public class ExpressionStatementHandler implements StatementHandler {
             String variableName = variable.getNameAsString();
             Expression initializer = variable.getInitializer().get();
 
-            RawNode resolvedNode = context.getExpressionResolver().resolve(
+            ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
                     rawTree,
                     step,
                     initializer,
                     context
             );
 
-            if (resolvedNode != null) {
-                bindResolved(rawTree, step, variableName, resolvedNode);
+            if (!result.isEmpty()) {
+                bindResolved(rawTree, step, variableName, result);
                 continue;
             }
 
@@ -121,7 +124,7 @@ public class ExpressionStatementHandler implements StatementHandler {
                         UsageKind.INTERMEDIATE
                 );
                 breakNode.setUsageKind(UsageKind.INTERMEDIATE);
-                step.bind(variableName, breakNode);
+                step.bindSingle(variableName, breakNode);
             }
         }
 
@@ -156,15 +159,15 @@ public class ExpressionStatementHandler implements StatementHandler {
             }
         }
 
-        RawNode resolvedNode = context.getExpressionResolver().resolve(
+        ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 value,
                 context
         );
 
-        if (resolvedNode != null) {
-            bindResolved(rawTree, step, targetName, resolvedNode);
+        if (!result.isEmpty()) {
+            bindResolved(rawTree, step, targetName, result);
             return StatementHandleResult.continueLinear();
         }
 
@@ -175,7 +178,7 @@ public class ExpressionStatementHandler implements StatementHandler {
                     UsageKind.INTERMEDIATE
             );
             breakNode.setUsageKind(UsageKind.INTERMEDIATE);
-            step.bind(targetName, breakNode);
+            step.bindSingle(targetName, breakNode);
         }
 
         return StatementHandleResult.continueLinear();
@@ -206,13 +209,19 @@ public class ExpressionStatementHandler implements StatementHandler {
     private void bindResolved(RawTree rawTree,
                               AnalysisStep step,
                               String variableName,
-                              RawNode resolvedNode) {
-        RawNode nodeToBind = shouldCreateAlias(variableName, resolvedNode)
-                ? rawTree.addAlias(resolvedNode, variableName)
-                : resolvedNode;
+                              ExpressionResolutionResult result) {
+        Set<RawNode> nodes = new LinkedHashSet<>();
 
-        nodeToBind.setUsageKind(UsageKind.INTERMEDIATE);
-        step.bind(variableName, nodeToBind);
+        for (RawNode resolvedNode : result.getNodes()) {
+            RawNode nodeToBind = shouldCreateAlias(variableName, resolvedNode)
+                    ? rawTree.addAlias(resolvedNode, variableName)
+                    : resolvedNode;
+
+            nodeToBind.setUsageKind(UsageKind.INTERMEDIATE);
+            nodes.add(nodeToBind);
+        }
+
+        step.bind(variableName, new ValueBinding(nodes, result.isUncertain()));
     }
 
     private boolean shouldCreateAlias(String variableName, RawNode resolvedNode) {
@@ -248,24 +257,24 @@ public class ExpressionStatementHandler implements StatementHandler {
             );
         }
 
-        RawNode callResult = context.getExpressionResolver().resolve(rawTree, step, expr, context);
+        ExpressionResolutionResult callResult = context.getExpressionResolver().resolveAll(rawTree, step, expr, context);
         markTerminal(callResult);
 
         for (Expression argument : expr.getArguments()) {
-            RawNode argumentNode = context.getExpressionResolver().resolve(
+            ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
                     rawTree,
                     step,
                     argument,
                     context
             );
-            markTerminal(argumentNode);
+            markTerminal(argumentResult);
         }
 
         return StatementHandleResult.continueLinear();
     }
 
-    private void markTerminal(RawNode node) {
-        if (node != null) {
+    private void markTerminal(ExpressionResolutionResult result) {
+        for (RawNode node : result.getNodes()) {
             node.setUsageKind(UsageKind.TERMINAL);
         }
     }

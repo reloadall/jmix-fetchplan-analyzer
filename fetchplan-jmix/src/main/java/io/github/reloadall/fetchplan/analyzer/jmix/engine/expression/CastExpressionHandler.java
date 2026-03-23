@@ -19,12 +19,13 @@ public class CastExpressionHandler implements ExpressionHandler {
     }
 
     @Override
-    public RawNode resolve(RawTree rawTree,
-                           AnalysisStep step,
-                           Expression expression,
-                           EngineContext context) {
+    public ExpressionResolutionResult resolveAll(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 Expression expression,
+                                                 EngineContext context) {
         CastExpr castExpr = expression.asCastExpr();
-        return context.getExpressionResolver().resolve(
+
+        return context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 castExpr.getExpression(),

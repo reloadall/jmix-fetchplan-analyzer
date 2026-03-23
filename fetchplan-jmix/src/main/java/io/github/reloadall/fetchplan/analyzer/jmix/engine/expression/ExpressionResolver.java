@@ -14,27 +14,55 @@ import org.springframework.stereotype.Component;
 @Component("fpa_ExpressionResolver")
 public class ExpressionResolver {
 
-    private final List<ExpressionHandler> handlers;
+    private final List<ExpressionHandler> expressionHandlers;
 
-    @Autowired
-    public ExpressionResolver(List<ExpressionHandler> handlers) {
-        this.handlers = Objects.requireNonNull(handlers, "handlers is null");
+    public ExpressionResolver(List<ExpressionHandler> expressionHandlers) {
+        this.expressionHandlers = Objects.requireNonNull(expressionHandlers, "expressionHandlers is null");
+    }
+
+    public ExpressionResolutionResult resolveAll(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 Expression expression,
+                                                 EngineContext context) {
+        if (expression == null) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+        boolean supportedByAny = false;
+
+        for (ExpressionHandler handler : expressionHandlers) {
+            if (!handler.supports(expression)) {
+                continue;
+            }
+
+            supportedByAny = true;
+
+            ExpressionResolutionResult result = handler.resolveAll(
+                    rawTree,
+                    step,
+                    expression,
+                    context
+            );
+
+            if (!result.isEmpty() || result.isUncertain()) {
+                merged = merged.merge(result);
+
+                // Для большинства кейсов можно возвращать сразу первый осмысленный результат.
+                // Но merge оставлен, чтобы не потерять union-compatible handlers.
+                return merged;
+            }
+        }
+
+        return supportedByAny ? merged : ExpressionResolutionResult.empty();
     }
 
     public RawNode resolve(RawTree rawTree,
                            AnalysisStep step,
                            Expression expression,
                            EngineContext context) {
-        if (expression == null) {
-            return null;
-        }
-
-        for (ExpressionHandler handler : handlers) {
-            if (handler.supports(expression)) {
-                return handler.resolve(rawTree, step, expression, context);
-            }
-        }
-
-        return null;
+        ExpressionResolutionResult result = resolveAll(rawTree, step, expression, context);
+        return result.getSingleNodeOrNull();
     }
+
 }

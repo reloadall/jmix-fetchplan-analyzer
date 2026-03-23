@@ -1,6 +1,6 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -12,16 +12,16 @@ public class Continuation {
     private final MethodDeclaration method;
     private final StepPayload payload;
     private final RawNode currentRawNode;
-    private final Map<String, RawNode> bindings;
+    private final Map<String, ValueBinding> bindings;
 
     public Continuation(MethodDeclaration method,
                         StepPayload payload,
                         RawNode currentRawNode,
-                        Map<String, RawNode> bindings) {
+                        Map<String, ValueBinding> bindings) {
         this.method = Objects.requireNonNull(method, "method is null");
         this.payload = Objects.requireNonNull(payload, "payload is null");
         this.currentRawNode = Objects.requireNonNull(currentRawNode, "currentRawNode is null");
-        this.bindings = new HashMap<>(Objects.requireNonNull(bindings, "bindings is null"));
+        this.bindings = new LinkedHashMap<>(Objects.requireNonNull(bindings, "bindings is null"));
     }
 
     public MethodDeclaration getMethod() {
@@ -36,7 +36,7 @@ public class Continuation {
         return currentRawNode;
     }
 
-    public Map<String, RawNode> getBindings() {
+    public Map<String, ValueBinding> getBindings() {
         return bindings;
     }
 
@@ -45,7 +45,7 @@ public class Continuation {
                 method,
                 payload,
                 currentRawNode,
-                new HashMap<>(bindings)
+                bindings
         );
     }
 }

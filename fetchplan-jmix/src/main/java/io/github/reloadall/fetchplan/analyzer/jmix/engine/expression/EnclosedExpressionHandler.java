@@ -4,7 +4,6 @@ import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
-import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -19,12 +18,13 @@ public class EnclosedExpressionHandler implements ExpressionHandler {
     }
 
     @Override
-    public RawNode resolve(RawTree rawTree,
-                           AnalysisStep step,
-                           Expression expression,
-                           EngineContext context) {
+    public ExpressionResolutionResult resolveAll(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 Expression expression,
+                                                 EngineContext context) {
         EnclosedExpr enclosedExpr = expression.asEnclosedExpr();
-        return context.getExpressionResolver().resolve(
+
+        return context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 enclosedExpr.getInner(),
