@@ -1,5 +1,8 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
@@ -22,43 +25,44 @@ public class CollectionGetExpressionHandler implements ExpressionHandler {
         }
 
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
-        return isCollectionGet(methodCallExpr);
+        return "get".equals(methodCallExpr.getNameAsString())
+                && methodCallExpr.getScope().isPresent()
+                && !methodCallExpr.getArguments().isEmpty();
     }
 
     @Override
-    public RawNode resolve(RawTree rawTree,
-                           AnalysisStep step,
-                           Expression expression,
-                           EngineContext context) {
+    public ExpressionResolutionResult resolveAll(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 Expression expression,
+                                                 EngineContext context) {
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
 
-        if (methodCallExpr.getScope().isEmpty()) {
-            return null;
-        }
-
-        RawNode collectionNode = context.getExpressionResolver().resolve(
+        ExpressionResolutionResult scopeResult = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 methodCallExpr.getScope().get(),
                 context
         );
 
-        if (collectionNode == null) {
-            return null;
+        if (scopeResult.isEmpty()) {
+            return scopeResult.isUncertain()
+                    ? ExpressionResolutionResult.uncertainEmpty()
+                    : ExpressionResolutionResult.empty();
         }
 
-        return rawTree.addChild(
-                collectionNode,
-                null,
-                FlowKind.COLLECTION_ELEMENT,
-                null,
-                UsageKind.INTERMEDIATE
-        );
-    }
+        Set<RawNode> resultNodes = new LinkedHashSet<>();
 
-    private boolean isCollectionGet(MethodCallExpr methodCallExpr) {
-        return "get".equals(methodCallExpr.getNameAsString())
-                && methodCallExpr.getArguments().size() == 1
-                && methodCallExpr.getScope().isPresent();
+        for (RawNode scopeNode : scopeResult.getNodes()) {
+            RawNode elementNode = rawTree.addChild(
+                    scopeNode,
+                    null,
+                    FlowKind.COLLECTION_ELEMENT,
+                    null,
+                    UsageKind.INTERMEDIATE
+            );
+            resultNodes.add(elementNode);
+        }
+
+        return new ExpressionResolutionResult(resultNodes, scopeResult.isUncertain());
     }
 }

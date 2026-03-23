@@ -5,7 +5,6 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.PassThroughMethodPolicy;
-import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
@@ -33,13 +32,17 @@ public class PassThroughMethodCallExpressionHandler implements ExpressionHandler
     }
 
     @Override
-    public RawNode resolve(RawTree rawTree,
-                           AnalysisStep step,
-                           Expression expression,
-                           EngineContext context) {
+    public ExpressionResolutionResult resolveAll(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 Expression expression,
+                                                 EngineContext context) {
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
 
-        return context.getExpressionResolver().resolve(
+        if (methodCallExpr.getScope().isEmpty()) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        return context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 methodCallExpr.getScope().get(),

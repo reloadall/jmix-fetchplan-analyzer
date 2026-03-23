@@ -10,6 +10,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.Continuation;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementHandleResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementsPayload;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.UnknownBreakPolicy;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
@@ -46,23 +47,26 @@ public class ReturnStatementHandler implements StatementHandler {
         }
 
         Expression expression = returnStmt.getExpression().get();
-        RawNode resolvedNode = context.getExpressionResolver().resolve(
+
+        ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 expression,
                 context
         );
 
-        if (resolvedNode == null && unknownBreakPolicy.shouldCreateForReturnFailure(expression)) {
-            resolvedNode = rawTree.addUnknownBreak(
+        if (result.isEmpty() && unknownBreakPolicy.shouldCreateForReturnFailure(expression)) {
+            RawNode breakNode = rawTree.addUnknownBreak(
                     step.getCurrentRawNode(),
                     null,
                     UsageKind.TERMINAL
             );
+            breakNode.setUsageKind(UsageKind.TERMINAL);
+            return returnToCallerIfNeeded(step);
         }
 
-        if (resolvedNode != null) {
-            resolvedNode.setUsageKind(UsageKind.TERMINAL);
+        for (RawNode node : result.getNodes()) {
+            node.setUsageKind(UsageKind.TERMINAL);
         }
 
         return returnToCallerIfNeeded(step);

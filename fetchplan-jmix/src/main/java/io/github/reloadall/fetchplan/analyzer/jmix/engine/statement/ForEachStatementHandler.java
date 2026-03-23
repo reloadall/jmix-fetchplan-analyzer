@@ -1,12 +1,12 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.statement;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.javaparser.ast.body.VariableDeclarator;
-import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
@@ -14,6 +14,8 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.Continuation;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementHandleResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementsPayload;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.FlowKind;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
@@ -43,7 +45,7 @@ public class ForEachStatementHandler implements StatementHandler {
                 step.getMethod(),
                 afterLoopPayload,
                 step.getCurrentRawNode(),
-                step.getBindings()
+                step.copyBindings()
         );
 
         List<Continuation> continuations = new ArrayList<>();
@@ -52,15 +54,35 @@ public class ForEachStatementHandler implements StatementHandler {
             continuations.add(afterLoopContinuation);
         }
 
-        RawNode elementNode = resolveElementNode(rawTree, step, forEachStmt, context);
-        if (elementNode == null) {
+        ExpressionResolutionResult iterableResult = context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                forEachStmt.getIterable(),
+                context
+        );
+
+        if (iterableResult.isEmpty()) {
             rawTree.addUnknownBreak(step.getCurrentRawNode(), null, UsageKind.NONE);
             return StatementHandleResult.customContinuations(continuations);
         }
 
+        Set<RawNode> elementNodes = new LinkedHashSet<>();
+        for (RawNode iterableNode : iterableResult.getNodes()) {
+            RawNode elementNode = rawTree.addChild(
+                    iterableNode,
+                    null,
+                    FlowKind.COLLECTION_ELEMENT,
+                    null,
+                    UsageKind.INTERMEDIATE
+            );
+            elementNodes.add(elementNode);
+        }
+
         String loopVariableName = resolveLoopVariableName(forEachStmt);
-        Map<String, RawNode> nextBindings = new HashMap<>(step.getBindings());
-        nextBindings.put(loopVariableName, elementNode);
+        Map<String, ValueBinding> nextBindings = step.copyBindings();
+        nextBindings.put(loopVariableName, new ValueBinding(elementNodes, iterableResult.isUncertain()));
+
+        RawNode anchor = elementNodes.iterator().next();
 
         StatementsPayload bodyPayload = new StatementsPayload(
                 asStatements(forEachStmt.getBody()),
@@ -71,36 +93,11 @@ public class ForEachStatementHandler implements StatementHandler {
         continuations.add(step.continueWith(
                 step.getMethod(),
                 bodyPayload,
-                elementNode,
+                anchor,
                 nextBindings
         ));
 
         return StatementHandleResult.customContinuations(continuations);
-    }
-
-    private RawNode resolveElementNode(RawTree rawTree,
-                                       AnalysisStep step,
-                                       ForEachStmt forEachStmt,
-                                       EngineContext context) {
-        Expression iterable = forEachStmt.getIterable();
-
-        RawNode iterableNode = context.getExpressionResolver().resolve(
-                rawTree,
-                step,
-                iterable,
-                context
-        );
-        if (iterableNode == null) {
-            return null;
-        }
-
-        return rawTree.addChild(
-                iterableNode,
-                null,
-                FlowKind.COLLECTION_ELEMENT,
-                null,
-                UsageKind.INTERMEDIATE
-        );
     }
 
     private String resolveLoopVariableName(ForEachStmt forEachStmt) {

@@ -1,5 +1,8 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
@@ -21,49 +24,58 @@ public class MethodCallExpressionHandler implements ExpressionHandler {
     }
 
     @Override
-    public RawNode resolve(RawTree rawTree,
-                           AnalysisStep step,
-                           Expression expression,
-                           EngineContext context) {
-        MethodCallExpr expr = expression.asMethodCallExpr();
+    public ExpressionResolutionResult resolveAll(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 Expression expression,
+                                                 EngineContext context) {
+        MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
 
-        if (expr.getScope().isEmpty()) {
-            return null;
+        if (methodCallExpr.getScope().isEmpty()) {
+            return ExpressionResolutionResult.empty();
         }
 
-        RawNode baseNode = context.getExpressionResolver().resolve(
+        String fieldName = extractFieldName(methodCallExpr);
+        if (fieldName == null) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        ExpressionResolutionResult scopeResult = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
-                expr.getScope().get(),
+                methodCallExpr.getScope().get(),
                 context
         );
 
-        if (baseNode == null) {
-            return null;
+        if (scopeResult.isEmpty()) {
+            return scopeResult.isUncertain()
+                    ? ExpressionResolutionResult.uncertainEmpty()
+                    : ExpressionResolutionResult.empty();
         }
 
-        String fieldName = tryResolveGetterName(expr);
-        if (fieldName == null) {
-            return null;
+        Set<RawNode> resultNodes = new LinkedHashSet<>();
+
+        for (RawNode scopeNode : scopeResult.getNodes()) {
+            RawNode child = rawTree.addChild(
+                    scopeNode,
+                    fieldName,
+                    FlowKind.DIRECT,
+                    null,
+                    UsageKind.INTERMEDIATE
+            );
+            resultNodes.add(child);
         }
 
-        return rawTree.addChild(
-                baseNode,
-                fieldName,
-                FlowKind.DIRECT,
-                null,
-                UsageKind.INTERMEDIATE
-        );
+        return new ExpressionResolutionResult(resultNodes, scopeResult.isUncertain());
     }
 
-    private String tryResolveGetterName(MethodCallExpr expr) {
-        String methodName = expr.getNameAsString();
+    private String extractFieldName(MethodCallExpr methodCallExpr) {
+        String methodName = methodCallExpr.getNameAsString();
 
-        if (methodName.startsWith("get") && methodName.length() > 3) {
+        if (methodName.startsWith("get") && methodName.length() > 3 && methodCallExpr.getArguments().isEmpty()) {
             return decapitalize(methodName.substring(3));
         }
 
-        if (methodName.startsWith("is") && methodName.length() > 2) {
+        if (methodName.startsWith("is") && methodName.length() > 2 && methodCallExpr.getArguments().isEmpty()) {
             return decapitalize(methodName.substring(2));
         }
 
@@ -71,6 +83,9 @@ public class MethodCallExpressionHandler implements ExpressionHandler {
     }
 
     private String decapitalize(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
         if (value.length() == 1) {
             return value.toLowerCase();
         }

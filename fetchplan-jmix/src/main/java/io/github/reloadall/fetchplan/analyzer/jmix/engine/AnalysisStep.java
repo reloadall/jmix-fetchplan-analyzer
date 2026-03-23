@@ -1,26 +1,35 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 
 public class AnalysisStep {
 
     private final MethodDeclaration method;
     private final StepPayload payload;
-    private RawNode currentRawNode;
-    private final Map<String, RawNode> bindings;
+    private final RawNode currentRawNode;
+    private final Map<String, ValueBinding> bindings;
 
-    public static AnalysisStep start(MethodDeclaration method, String rootParamName, RawNode rootNode) {
-        Objects.requireNonNull(method, "method is null");
-        Objects.requireNonNull(rootParamName, "rootParamName is null");
-        Objects.requireNonNull(rootNode, "rootNode is null");
+    public AnalysisStep(MethodDeclaration method,
+                        StepPayload payload,
+                        RawNode currentRawNode,
+                        Map<String, ValueBinding> bindings) {
+        this.method = Objects.requireNonNull(method, "method is null");
+        this.payload = Objects.requireNonNull(payload, "payload is null");
+        this.currentRawNode = Objects.requireNonNull(currentRawNode, "currentRawNode is null");
+        this.bindings = new LinkedHashMap<>(Objects.requireNonNull(bindings, "bindings is null"));
+    }
 
-        Map<String, RawNode> bindings = new HashMap<>();
-        bindings.put(rootParamName, rootNode);
+    public static AnalysisStep start(MethodDeclaration method,
+                                     String rootParamName,
+                                     RawNode rootNode) {
+        Map<String, ValueBinding> bindings = new LinkedHashMap<>();
+        bindings.put(rootParamName, ValueBinding.of(rootNode));
 
         return new AnalysisStep(
                 method,
@@ -28,16 +37,6 @@ public class AnalysisStep {
                 rootNode,
                 bindings
         );
-    }
-
-    public AnalysisStep(MethodDeclaration method,
-                        StepPayload payload,
-                        RawNode currentRawNode,
-                        Map<String, RawNode> bindings) {
-        this.method = Objects.requireNonNull(method, "method is null");
-        this.payload = Objects.requireNonNull(payload, "payload is null");
-        this.currentRawNode = Objects.requireNonNull(currentRawNode, "currentRawNode is null");
-        this.bindings = Objects.requireNonNull(bindings, "bindings is null");
     }
 
     public MethodDeclaration getMethod() {
@@ -52,34 +51,48 @@ public class AnalysisStep {
         return currentRawNode;
     }
 
-    public void setCurrentRawNode(RawNode currentRawNode) {
-        this.currentRawNode = Objects.requireNonNull(currentRawNode, "currentRawNode is null");
-    }
-
-    public Map<String, RawNode> getBindings() {
+    public Map<String, ValueBinding> getBindings() {
         return bindings;
     }
 
-    public void bind(String variableName, RawNode node) {
-        bindings.put(variableName, node);
+    public ValueBinding getBinding(String name) {
+        return bindings.get(name);
     }
 
-    public RawNode resolveBinding(String variableName) {
-        return bindings.get(variableName);
+    public void bind(String name, ValueBinding binding) {
+        bindings.put(name, binding);
+    }
+
+    public void bindSingle(String name, RawNode node) {
+        bindings.put(name, ValueBinding.of(node));
+    }
+
+    public void bindAll(String name, ExpressionResolutionResult result) {
+        bindings.put(name, ValueBinding.from(result));
     }
 
     public Continuation continueWith(StepPayload nextPayload) {
-        return new Continuation(method, nextPayload, currentRawNode, bindings);
+        return new Continuation(
+                method,
+                nextPayload,
+                currentRawNode,
+                copyBindings()
+        );
     }
 
-    public Continuation continueWith(StepPayload nextPayload, RawNode nextCurrentRawNode) {
-        return new Continuation(method, nextPayload, nextCurrentRawNode, bindings);
+    public Continuation continueWith(MethodDeclaration method,
+                                     StepPayload payload,
+                                     RawNode currentRawNode,
+                                     Map<String, ValueBinding> bindings) {
+        return new Continuation(
+                method,
+                payload,
+                currentRawNode,
+                bindings
+        );
     }
 
-    public Continuation continueWith(MethodDeclaration nextMethod,
-                                     StepPayload nextPayload,
-                                     RawNode nextCurrentRawNode,
-                                     Map<String, RawNode> nextBindings) {
-        return new Continuation(nextMethod, nextPayload, nextCurrentRawNode, nextBindings);
+    public Map<String, ValueBinding> copyBindings() {
+        return new LinkedHashMap<>(bindings);
     }
 }

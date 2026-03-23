@@ -13,6 +13,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.Continuation;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementsPayload;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StepPayload;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import org.springframework.stereotype.Component;
 
@@ -52,13 +53,13 @@ public class VisitedKeyFactory {
         String bodyKey = buildStatementsContainerKey(payload);
 
         if (payload.hasCurrentStatement()) {
-            return "STATEMENTS:CUR:" + nodeKey(payload.currentStatement()) +
-                    ":BODY=" + bodyKey +
-                    ":FIN=" + buildContinuationKey(payload.getContinuationOnFinish());
+            return "STATEMENTS:CUR:" + nodeKey(payload.currentStatement())
+                    + ":BODY=" + bodyKey
+                    + ":FIN=" + buildContinuationKey(payload.getContinuationOnFinish());
         }
 
-        return "STATEMENTS:END:" + bodyKey +
-                ":FIN=" + buildContinuationKey(payload.getContinuationOnFinish());
+        return "STATEMENTS:END:" + bodyKey
+                + ":FIN=" + buildContinuationKey(payload.getContinuationOnFinish());
     }
 
     private String buildStatementsContainerKey(StatementsPayload payload) {
@@ -95,11 +96,18 @@ public class VisitedKeyFactory {
         return payload.getClass().getSimpleName();
     }
 
-    private String buildBindingsKey(Map<String, RawNode> bindings) {
+    private String buildBindingsKey(Map<String, ValueBinding> bindings) {
         return bindings.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getKey))
-                .map(entry -> entry.getKey() + "=" + entry.getValue().getId())
-                .collect(Collectors.joining("|"));
+                .map(entry -> entry.getKey()
+                        + "="
+                        + entry.getValue().getNodes().stream()
+                        .map(RawNode::getId)
+                        .sorted()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","))
+                        + "|u=" + entry.getValue().isUncertain())
+                .collect(Collectors.joining("||"));
     }
 
     private String nodeKey(Node node) {
