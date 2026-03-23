@@ -23,6 +23,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionR
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_InterprocReturnResolver")
@@ -30,6 +31,7 @@ public class InterprocReturnResolver {
 
     private final AnalysisTrace analysisTrace;
 
+    @Autowired
     public InterprocReturnResolver(AnalysisTrace analysisTrace) {
         this.analysisTrace = Objects.requireNonNull(analysisTrace, "analysisTrace is null");
     }

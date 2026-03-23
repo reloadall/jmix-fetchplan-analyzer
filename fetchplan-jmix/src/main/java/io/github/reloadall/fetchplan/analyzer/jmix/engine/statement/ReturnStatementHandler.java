@@ -25,6 +25,7 @@ public class ReturnStatementHandler implements StatementHandler {
 
     private final UnknownBreakPolicy unknownBreakPolicy;
 
+    @Autowired
     public ReturnStatementHandler(UnknownBreakPolicy unknownBreakPolicy) {
         this.unknownBreakPolicy = unknownBreakPolicy;
     }

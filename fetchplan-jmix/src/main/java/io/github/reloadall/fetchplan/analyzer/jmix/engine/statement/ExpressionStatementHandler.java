@@ -36,6 +36,7 @@ public class ExpressionStatementHandler implements StatementHandler {
     private final UnknownBreakPolicy unknownBreakPolicy;
     private final InterprocCallPlanner interprocCallPlanner;
 
+    @Autowired
     public ExpressionStatementHandler(UnknownBreakPolicy unknownBreakPolicy,
                                       InterprocCallPlanner interprocCallPlanner) {
         this.unknownBreakPolicy = unknownBreakPolicy;

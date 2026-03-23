@@ -6,6 +6,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.PassThroughMethodPolicy;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ public class PassThroughMethodCallExpressionHandler implements ExpressionHandler
 
     private final PassThroughMethodPolicy passThroughMethodPolicy;
 
+    @Autowired
     public PassThroughMethodCallExpressionHandler(PassThroughMethodPolicy passThroughMethodPolicy) {
         this.passThroughMethodPolicy = passThroughMethodPolicy;
     }

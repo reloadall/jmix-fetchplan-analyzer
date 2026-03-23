@@ -1,14 +1,12 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.statement;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.github.javaparser.ast.body.VariableDeclarator;
-import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;

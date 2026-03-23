@@ -19,6 +19,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionR
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_InterprocCallPlanner")
@@ -29,6 +30,7 @@ public class InterprocCallPlanner {
     private final InterprocReturnResolver interprocReturnResolver;
     private final AnalysisTrace analysisTrace;
 
+    @Autowired
     public InterprocCallPlanner(InterprocMethodResolver interprocMethodResolver,
                                 InterprocArgumentBinder interprocArgumentBinder,
                                 InterprocReturnResolver interprocReturnResolver,

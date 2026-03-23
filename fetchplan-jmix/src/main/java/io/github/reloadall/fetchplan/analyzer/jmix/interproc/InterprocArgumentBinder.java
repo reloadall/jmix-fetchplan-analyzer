@@ -14,6 +14,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_InterprocArgumentBinder")
@@ -21,6 +22,7 @@ public class InterprocArgumentBinder {
 
     private final AnalysisTrace analysisTrace;
 
+    @Autowired
     public InterprocArgumentBinder(AnalysisTrace analysisTrace) {
         this.analysisTrace = Objects.requireNonNull(analysisTrace, "analysisTrace is null");
     }

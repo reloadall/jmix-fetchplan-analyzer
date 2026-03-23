@@ -20,6 +20,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocMethodReso
 import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocReturnResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,7 @@ public class InterprocMethodCallExpressionHandler implements ExpressionHandler {
     private final ThreadLocal<Set<String>> activeCalls =
             ThreadLocal.withInitial(LinkedHashSet::new);
 
+    @Autowired
     public InterprocMethodCallExpressionHandler(InterprocMethodResolver interprocMethodResolver,
                                                 InterprocArgumentBinder interprocArgumentBinder,
                                                 InterprocReturnResolver interprocReturnResolver,
