@@ -1,19 +1,24 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.Continuation;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementsPayload;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_InterprocCallPlanner")
@@ -22,14 +27,16 @@ public class InterprocCallPlanner {
     private final InterprocMethodResolver interprocMethodResolver;
     private final InterprocArgumentBinder interprocArgumentBinder;
     private final InterprocReturnResolver interprocReturnResolver;
+    private final AnalysisTrace analysisTrace;
 
-    @Autowired
     public InterprocCallPlanner(InterprocMethodResolver interprocMethodResolver,
                                 InterprocArgumentBinder interprocArgumentBinder,
-                                InterprocReturnResolver interprocReturnResolver) {
+                                InterprocReturnResolver interprocReturnResolver,
+                                AnalysisTrace analysisTrace) {
         this.interprocMethodResolver = interprocMethodResolver;
         this.interprocArgumentBinder = interprocArgumentBinder;
         this.interprocReturnResolver = interprocReturnResolver;
+        this.analysisTrace = Objects.requireNonNull(analysisTrace, "analysisTrace is null");
     }
 
     public Optional<InterprocCallPlan> plan(RawTree rawTree,
@@ -39,6 +46,8 @@ public class InterprocCallPlanner {
         if (!(step.getPayload() instanceof StatementsPayload currentPayload)) {
             return Optional.empty();
         }
+
+        analysisTrace.log("INTERPROC: try top-level call " + methodCallExpr);
 
         Optional<TargetInvocation> targetInvocationOpt = resolveTargetInvocation(
                 rawTree,
@@ -57,7 +66,7 @@ public class InterprocCallPlanner {
                 step.getMethod(),
                 afterCallPayload,
                 step.getCurrentRawNode(),
-                step.getBindings()
+                step.copyBindings()
         );
 
         StatementsPayload targetPayload = StatementsPayload.from(targetInvocation.targetMethod)
@@ -69,6 +78,10 @@ public class InterprocCallPlanner {
                 targetInvocation.entryAnchor,
                 targetInvocation.targetBindings
         );
+
+        analysisTrace.log("INTERPROC: planned top-level call into "
+                + targetInvocation.targetMethod.getNameAsString()
+                + ", entry rawNode#" + targetInvocation.entryAnchor.getId());
 
         return Optional.of(new InterprocCallPlan(targetMethodContinuation));
     }
@@ -82,6 +95,9 @@ public class InterprocCallPlanner {
             return Optional.empty();
         }
 
+        analysisTrace.log("INTERPROC: try value-call " + methodCallExpr
+                + " -> bind to variable " + targetVariableName);
+
         Optional<TargetInvocation> targetInvocationOpt = resolveTargetInvocation(
                 rawTree,
                 step,
@@ -94,22 +110,22 @@ public class InterprocCallPlanner {
 
         TargetInvocation targetInvocation = targetInvocationOpt.get();
 
-        Optional<RawNode> returnNodeOpt = interprocReturnResolver.resolveReturnNode(
+        ExpressionResolutionResult returnResult = interprocReturnResolver.resolveReturnValue(
                 rawTree,
                 targetInvocation.targetMethod,
                 targetInvocation.targetBindings,
                 targetInvocation.entryAnchor,
                 context
         );
-        if (returnNodeOpt.isEmpty()) {
+        if (returnResult.isEmpty()) {
+            analysisTrace.log("INTERPROC: value-call failed, return node unresolved for " + methodCallExpr);
             return Optional.empty();
         }
 
-        RawNode boundReturnNode = bindReturnValue(rawTree, targetVariableName, returnNodeOpt.get());
-        boundReturnNode.setUsageKind(UsageKind.INTERMEDIATE);
+        ValueBinding boundReturnBinding = bindReturnValue(rawTree, targetVariableName, returnResult);
 
-        Map<String, RawNode> callerBindings = new HashMap<>(step.getBindings());
-        callerBindings.put(targetVariableName, boundReturnNode);
+        Map<String, ValueBinding> callerBindings = new HashMap<>(step.getBindings());
+        callerBindings.put(targetVariableName, boundReturnBinding);
 
         StatementsPayload afterCallPayload = currentPayload.next();
         Continuation returnToCaller = new Continuation(
@@ -129,6 +145,12 @@ public class InterprocCallPlanner {
                 targetInvocation.targetBindings
         );
 
+        analysisTrace.log("INTERPROC: planned value-call into "
+                + targetInvocation.targetMethod.getNameAsString()
+                + ", return bound to variable " + targetVariableName
+                + " via nodes="
+                + boundReturnBinding.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
+
         return Optional.of(new InterprocCallPlan(targetMethodContinuation));
     }
 
@@ -146,7 +168,7 @@ public class InterprocCallPlanner {
             return Optional.empty();
         }
 
-        Optional<Map<String, RawNode>> targetBindingsOpt = interprocArgumentBinder.bindArguments(
+        Optional<Map<String, ValueBinding>> targetBindingsOpt = interprocArgumentBinder.bindArguments(
                 rawTree,
                 step,
                 methodCallExpr,
@@ -157,21 +179,27 @@ public class InterprocCallPlanner {
             return Optional.empty();
         }
 
-        Map<String, RawNode> targetBindings = targetBindingsOpt.get();
-        if (targetBindings.isEmpty()) {
-            return Optional.empty();
-        }
-
+        Map<String, ValueBinding> targetBindings = targetBindingsOpt.get();
         RawNode entryAnchor = resolveEntryAnchor(targetBindings, step.getCurrentRawNode());
 
         return Optional.of(new TargetInvocation(targetMethod, targetBindings, entryAnchor));
     }
 
-    private RawNode bindReturnValue(RawTree rawTree, String variableName, RawNode returnNode) {
-        if (shouldCreateAlias(variableName, returnNode)) {
-            return rawTree.addAlias(returnNode, variableName);
+    private ValueBinding bindReturnValue(RawTree rawTree,
+                                         String variableName,
+                                         ExpressionResolutionResult returnResult) {
+        Set<RawNode> nodes = new LinkedHashSet<>();
+
+        for (RawNode returnNode : returnResult.getNodes()) {
+            RawNode boundNode = shouldCreateAlias(variableName, returnNode)
+                    ? rawTree.addAlias(returnNode, variableName)
+                    : returnNode;
+
+            boundNode.setUsageKind(UsageKind.INTERMEDIATE);
+            nodes.add(boundNode);
         }
-        return returnNode;
+
+        return new ValueBinding(nodes, returnResult.isUncertain());
     }
 
     private boolean shouldCreateAlias(String variableName, RawNode resolvedNode) {
@@ -190,19 +218,22 @@ public class InterprocCallPlanner {
         return true;
     }
 
-    private RawNode resolveEntryAnchor(Map<String, RawNode> targetBindings, RawNode fallback) {
-        return targetBindings.values().stream()
-                .findFirst()
-                .orElse(fallback);
+    private RawNode resolveEntryAnchor(Map<String, ValueBinding> targetBindings, RawNode fallback) {
+        for (ValueBinding binding : targetBindings.values()) {
+            if (!binding.isEmpty()) {
+                return binding.getNodes().iterator().next();
+            }
+        }
+        return fallback;
     }
 
     private static class TargetInvocation {
         private final MethodDeclaration targetMethod;
-        private final Map<String, RawNode> targetBindings;
+        private final Map<String, ValueBinding> targetBindings;
         private final RawNode entryAnchor;
 
         private TargetInvocation(MethodDeclaration targetMethod,
-                                 Map<String, RawNode> targetBindings,
+                                 Map<String, ValueBinding> targetBindings,
                                  RawNode entryAnchor) {
             this.targetMethod = targetMethod;
             this.targetBindings = targetBindings;

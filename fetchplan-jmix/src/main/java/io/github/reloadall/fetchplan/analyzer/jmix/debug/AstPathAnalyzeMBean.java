@@ -47,6 +47,7 @@ public class AstPathAnalyzeMBean {
     private final RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor;
     private final AnalysisReportFormatter analysisReportFormatter;
     private final SourceRootsResolver sourceRootsResolver;
+    private final AnalysisTrace analysisTrace;
 
     @Autowired
     public AstPathAnalyzeMBean(SourceMethodResolver sourceMethodResolver,
@@ -60,7 +61,8 @@ public class AstPathAnalyzeMBean {
                                PathComparator pathComparator,
                                RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor,
                                AnalysisReportFormatter analysisReportFormatter,
-                               SourceRootsResolver sourceRootsResolver) {
+                               SourceRootsResolver sourceRootsResolver,
+                               AnalysisTrace analysisTrace) {
         this.sourceMethodResolver = sourceMethodResolver;
         this.astPathEngine = astPathEngine;
         this.rawTreePrinter = rawTreePrinter;
@@ -73,6 +75,28 @@ public class AstPathAnalyzeMBean {
         this.rawTreeUncertaintyExtractor = rawTreeUncertaintyExtractor;
         this.analysisReportFormatter = analysisReportFormatter;
         this.sourceRootsResolver = sourceRootsResolver;
+        this.analysisTrace = analysisTrace;
+    }
+
+    @ManagedOperation(description = "Run the AST parser and return trace")
+    @ManagedOperationParameters({
+            @ManagedOperationParameter(name = "targetClass", description = "Full class name"),
+            @ManagedOperationParameter(name = "methodName", description = "Method name"),
+            @ManagedOperationParameter(name = "rootParamName", description = "Root parameter name"),
+            @ManagedOperationParameter(name = "rootParamType", description = "Full name of the root parameter type")
+    })
+    public String analyzeTrace(String targetClass,
+                               String methodName,
+                               String rootParamName,
+                               String rootParamType) {
+        analysisTrace.start(targetClass + "." + methodName);
+        try {
+            analysisTrace.log("ROOT PARAM: " + rootParamName + " : " + rootParamType);
+            analyzeRawTree(targetClass, methodName, rootParamName, rootParamType);
+            return analysisTrace.dump();
+        } finally {
+            analysisTrace.clear();
+        }
     }
 
     @ManagedOperation(description = "Run the AST parser and return RawTree")

@@ -18,6 +18,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,10 +29,12 @@ public class InterprocMethodResolver {
 
     private final SpringBeanImplementationResolver springBeanImplementationResolver;
     private final SourceRootsResolver sourceRootsResolver;
+    private final AnalysisTrace analysisTrace;
 
     @Autowired
     public InterprocMethodResolver(SpringBeanImplementationResolver springBeanImplementationResolver,
-                                   SourceRootsResolver sourceRootsResolver) {
+                                   SourceRootsResolver sourceRootsResolver,
+                                   AnalysisTrace analysisTrace) {
         this.springBeanImplementationResolver = Objects.requireNonNull(
                 springBeanImplementationResolver,
                 "springBeanImplementationResolver is null"
@@ -40,27 +43,32 @@ public class InterprocMethodResolver {
                 sourceRootsResolver,
                 "sourceRootsResolver is null"
         );
+        this.analysisTrace = Objects.requireNonNull(analysisTrace, "analysisTrace is null");
     }
 
     public Optional<MethodDeclaration> resolve(MethodCallExpr methodCallExpr, AnalysisStep step) {
+        analysisTrace.log("INTERPROC: resolve target for call = " + methodCallExpr);
         Objects.requireNonNull(methodCallExpr, "methodCallExpr is null");
         Objects.requireNonNull(step, "step is null");
 
         Optional<ResolvedTargetType> targetTypeOpt = resolveTargetType(methodCallExpr, step.getMethod());
         if (targetTypeOpt.isEmpty()) {
+            analysisTrace.log("INTERPROC: resolve target for call = " + methodCallExpr);
             return Optional.empty();
         }
-
+        analysisTrace.log("INTERPROC: declared target type = " + targetTypeOpt.get().getDeclaredTypeName());
         Optional<String> concreteTargetClassNameOpt = resolveConcreteTargetClassName(targetTypeOpt.get());
         if (concreteTargetClassNameOpt.isEmpty()) {
             return Optional.empty();
         }
 
         String concreteTargetClassName = concreteTargetClassNameOpt.get();
+        analysisTrace.log("INTERPROC: concrete target class = " + concreteTargetClassName);
 
         List<Path> sourceRoots = sourceRootsResolver.resolveMainJavaSourceRoots();
         Path javaFile = findJavaFile(sourceRoots, concreteTargetClassName);
         if (javaFile == null) {
+            analysisTrace.log("INTERPROC: source file not found for class = " + concreteTargetClassName);
             return Optional.empty();
         }
 
@@ -78,10 +86,17 @@ public class InterprocMethodResolver {
                 .collect(Collectors.toList());
 
         if (matches.size() != 1) {
+            analysisTrace.log("INTERPROC: target method unresolved or ambiguous for call = " + methodCallExpr);
             return Optional.empty();
         }
 
-        return Optional.of(matches.get(0));
+        MethodDeclaration target = matches.get(0);
+        analysisTrace.log("INTERPROC: target method resolved = "
+                + target.findAncestor(TypeDeclaration.class).map(TypeDeclaration::getNameAsString).orElse("<unknown>")
+                + "." + target.getNameAsString()
+                + "(" + target.getParameters().stream().map(p -> p.getType().asString()).collect(Collectors.joining(", "))
+                + ")");
+        return Optional.of(target);
     }
 
     private Optional<String> resolveConcreteTargetClassName(ResolvedTargetType targetType) {
