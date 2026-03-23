@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
+import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.visited.VisitedKey;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.visited.VisitedKeyFactory;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
@@ -21,14 +22,17 @@ public class AstPathEngine {
     private final List<StepPayloadHandler> payloadHandlers;
     private final EngineContext context;
     private final VisitedKeyFactory visitedKeyFactory;
+    private final AnalysisTrace analysisTrace;
 
     @Autowired
     public AstPathEngine(List<StepPayloadHandler> payloadHandlers,
                          EngineContext context,
-                         VisitedKeyFactory visitedKeyFactory) {
+                         VisitedKeyFactory visitedKeyFactory,
+                         AnalysisTrace analysisTrace) {
         this.payloadHandlers = Objects.requireNonNull(payloadHandlers, "payloadHandlers is null");
         this.context = Objects.requireNonNull(context, "context is null");
         this.visitedKeyFactory = Objects.requireNonNull(visitedKeyFactory, "visitedKeyFactory is null");
+        this.analysisTrace = Objects.requireNonNull(analysisTrace, "analysisTrace is null");
     }
 
     public RawTree analyze(MethodDeclaration method, String rootParamName) {
@@ -57,9 +61,11 @@ public class AstPathEngine {
                              Set<VisitedKey> visited) {
         VisitedKey visitedKey = visitedKeyFactory.build(step);
         if (!visited.add(visitedKey)) {
+            analysisTrace.logMethodEntry(step.getMethod());
             enqueueFinishContinuationIfAny(step, queue);
             return;
         }
+        analysisTrace.logMethodEntry(step.getMethod());
 
         StepPayloadHandler handler = findHandler(step.getPayload());
         if (handler == null) {
