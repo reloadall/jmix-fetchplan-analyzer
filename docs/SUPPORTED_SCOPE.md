@@ -96,6 +96,14 @@ Currently covered by scenario integration:
   `SyntheticLombokScenarioService.inspectDocumentWithChainedFinders(RootDocument document)`
   where one finder returns an entity rooted at the source document and later finders continue from that
   returned entity to deeper leaf fields.
+- helper-guarded explicit cast continuation via
+  `SyntheticLombokScenarioService.inspectLineWithTypeGuardAndCast(BaseLine line)`
+  where a boolean helper guard does not act as subtype proof by itself, but a guarded explicit Java cast allows
+  subtype-specific path extraction.
+- negative helper guard + early return + explicit cast continuation via
+  `SyntheticLombokScenarioService.inspectLineWithNegativeTypeGuardAndCast(BaseLine line)`
+  where a negative boolean helper guard causes early return, and subtype-specific extraction still relies on the
+  explicit cast that follows the guard.
 
 Still not scenario-covered as supported generalized worker dispatch:
 

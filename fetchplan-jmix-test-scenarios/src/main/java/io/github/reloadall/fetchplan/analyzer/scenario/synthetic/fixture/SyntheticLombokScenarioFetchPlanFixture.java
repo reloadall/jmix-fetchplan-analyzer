@@ -54,6 +54,30 @@ public final class SyntheticLombokScenarioFetchPlanFixture {
             "detail.parentDetail.document.routeInfo.groupInfo.agreement.sides.counterparty.name"
     );
 
+    public static final Set<String> INSPECT_LINE_WITH_TYPE_GUARD_AND_CAST_ALL_PATHS = Set.of(
+            "header",
+            "header.agreement",
+            "header.agreement.sides",
+            "header.agreement.sides.counterparty",
+            "header.agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> INSPECT_LINE_WITH_TYPE_GUARD_AND_CAST_LEAF_PATHS = Set.of(
+            "header.agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> INSPECT_LINE_WITH_NEGATIVE_TYPE_GUARD_AND_CAST_ALL_PATHS = Set.of(
+            "header",
+            "header.agreement",
+            "header.agreement.sides",
+            "header.agreement.sides.counterparty",
+            "header.agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> INSPECT_LINE_WITH_NEGATIVE_TYPE_GUARD_AND_CAST_LEAF_PATHS = Set.of(
+            "header.agreement.sides.counterparty.name"
+    );
+
     private SyntheticLombokScenarioFetchPlanFixture() {
     }
 }
