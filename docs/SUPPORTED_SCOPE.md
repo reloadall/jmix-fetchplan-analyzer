@@ -19,6 +19,7 @@
 - same-class method calls
 - `this.someMethod(...)`
 - simple interface-based bean call when implementation can be resolved unambiguously
+- narrow foreach fan-out for collection-injected Spring worker beans via `List<T>` / `Collection<T>` / `Iterable<T>` when loop variable directly scopes a method call and all implementations are resolved
 - value-call in initializer/assignment
 - return-based rebinding in simple cases
 - recursion guard
@@ -41,7 +42,11 @@
 
 - reflection-based access
 - dynamic proxies with ambiguous runtime targets
-- collection-injected Spring bean fan-out, e.g. `List<Worker>`
+- general collection-injected Spring bean dispatch beyond the narrow foreach pattern;
+- `workers.forEach(...)` and stream/lambda-based worker dispatch;
+- `supports(...)`-style filtering / selective worker execution;
+- qualifier / `@Primary` / ordering-sensitive worker selection semantics;
+- registry-style worker dispatch such as `Map<String, Worker>`;
 - advanced stream pipelines
 - complex overload resolution
 - qualifiers / primary resolution logic in full generality
@@ -80,11 +85,19 @@ Currently covered by scenario integration:
 - cast-based continuation via `inspectDocumentWithCast(Document document)`.
 - minimal `stream().map(MethodRef)` chain via `inspectDocumentWithStreamMap(Document document)`.
 - uncertainty / `UNKNOWN_BREAK` behavior via `inspectDocumentWithUnknownBreak(Document document)`.
+- narrow collection-injected worker fan-out via `inspectDocumentWithWorkers(Document document)` for:
+  `for (Worker worker : workers) { worker.process(document); }`
+  where `workers` is `List<T>` / `Collection<T>` / `Iterable<T>` and Spring bean implementations are resolved.
+
+Still not scenario-covered as supported generalized worker dispatch:
+
+- broader collection-injected worker dispatch beyond the narrow foreach pattern, including `workers.forEach(...)`, stream/lambda dispatch, filtering, qualifier-sensitive selection, and map-based worker registries.
 
 Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the minimal chained method-reference pattern are **not** yet documented as scenario-covered in this module.
+- collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 
 Do not treat it as:
 - a proof engine for arbitrary Java

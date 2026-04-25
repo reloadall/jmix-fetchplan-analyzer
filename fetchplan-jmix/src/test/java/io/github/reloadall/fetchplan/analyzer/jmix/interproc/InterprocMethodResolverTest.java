@@ -114,4 +114,116 @@ class InterprocMethodResolverTest {
 
         assertTrue(target.isEmpty());
     }
+
+    @Test
+    void resolvesListElementTypeFromFieldDeclaration() {
+        MethodDeclaration callerMethod = StaticJavaParser.parse("""
+                package com.example;
+
+                import java.util.List;
+
+                class CallerService {
+                    private List<DocumentWorker> workers;
+
+                    void caller(Document document) {
+                    }
+                }
+                """)
+                .findFirst(MethodDeclaration.class, m -> m.getNameAsString().equals("caller"))
+                .orElseThrow();
+
+        InterprocMethodResolver resolver = new InterprocMethodResolver(
+                mock(SpringBeanImplementationResolver.class),
+                new SourceAnalysisCache(mock(SourceRootsResolver.class)),
+                new AnalysisTrace()
+        );
+
+        Optional<ResolvedTargetType> targetType = resolver.resolveCollectionElementTargetType(callerMethod, "workers");
+
+        assertTrue(targetType.isPresent());
+        assertEquals("com.example.DocumentWorker", targetType.get().getDeclaredTypeName());
+    }
+
+    @Test
+    void resolvesCollectionElementTypeFromParameterDeclaration() {
+        MethodDeclaration callerMethod = StaticJavaParser.parse("""
+                package com.example;
+
+                import java.util.Collection;
+
+                class CallerService {
+                    void caller(Collection<DocumentWorker> workers, Document document) {
+                    }
+                }
+                """)
+                .findFirst(MethodDeclaration.class, m -> m.getNameAsString().equals("caller"))
+                .orElseThrow();
+
+        InterprocMethodResolver resolver = new InterprocMethodResolver(
+                mock(SpringBeanImplementationResolver.class),
+                new SourceAnalysisCache(mock(SourceRootsResolver.class)),
+                new AnalysisTrace()
+        );
+
+        Optional<ResolvedTargetType> targetType = resolver.resolveCollectionElementTargetType(callerMethod, "workers");
+
+        assertTrue(targetType.isPresent());
+        assertEquals("com.example.DocumentWorker", targetType.get().getDeclaredTypeName());
+    }
+
+    @Test
+    void resolvesIterableElementTypeFromLocalVariableDeclaration() {
+        MethodDeclaration callerMethod = StaticJavaParser.parse("""
+                package com.example;
+
+                import java.lang.Iterable;
+
+                class CallerService {
+                    void caller(Document document) {
+                        Iterable<DocumentWorker> workers = null;
+                    }
+                }
+                """)
+                .findFirst(MethodDeclaration.class, m -> m.getNameAsString().equals("caller"))
+                .orElseThrow();
+
+        InterprocMethodResolver resolver = new InterprocMethodResolver(
+                mock(SpringBeanImplementationResolver.class),
+                new SourceAnalysisCache(mock(SourceRootsResolver.class)),
+                new AnalysisTrace()
+        );
+
+        Optional<ResolvedTargetType> targetType = resolver.resolveCollectionElementTargetType(callerMethod, "workers");
+
+        assertTrue(targetType.isPresent());
+        assertEquals("com.example.DocumentWorker", targetType.get().getDeclaredTypeName());
+    }
+
+    @Test
+    void returnsEmptyForRawListWithoutElementType() {
+        MethodDeclaration callerMethod = StaticJavaParser.parse("""
+                package com.example;
+
+                import java.util.List;
+
+                class CallerService {
+                    private List workers;
+
+                    void caller(Document document) {
+                    }
+                }
+                """)
+                .findFirst(MethodDeclaration.class, m -> m.getNameAsString().equals("caller"))
+                .orElseThrow();
+
+        InterprocMethodResolver resolver = new InterprocMethodResolver(
+                mock(SpringBeanImplementationResolver.class),
+                new SourceAnalysisCache(mock(SourceRootsResolver.class)),
+                new AnalysisTrace()
+        );
+
+        Optional<ResolvedTargetType> targetType = resolver.resolveCollectionElementTargetType(callerMethod, "workers");
+
+        assertTrue(targetType.isEmpty());
+    }
 }

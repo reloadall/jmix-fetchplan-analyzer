@@ -1,6 +1,9 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
 import java.lang.reflect.Modifier;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -70,6 +73,36 @@ public class SpringBeanImplementationResolver {
         return Optional.empty();
     }
 
+    public List<Class<?>> resolveImplementations(Class<?> declaredType) {
+        if (declaredType == null) {
+            return List.of();
+        }
+
+        analysisTrace.log("SPRING: resolve all bean implementations for declaredType=" + declaredType.getName());
+
+        if (!declaredType.isInterface() && !Modifier.isAbstract(declaredType.getModifiers())) {
+            analysisTrace.log("SPRING: declared type already concrete for collection mode -> " + declaredType.getName());
+            return List.of(declaredType);
+        }
+
+        Map<String, Object> beans = getBeansOfType(declaredType);
+        if (beans.isEmpty()) {
+            analysisTrace.log("SPRING: collection mode found no beans for declaredType=" + declaredType.getName());
+            return List.of();
+        }
+
+        LinkedHashSet<Class<?>> implementations = beans.entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .map(Map.Entry::getValue)
+                .map(this::resolveTargetClass)
+                .filter(this::isConcreteClass)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        analysisTrace.log("SPRING: collection mode resolved implementations = "
+                + implementations.stream().map(Class::getName).toList());
+        return List.copyOf(implementations);
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private Map<String, Object> getBeansOfType(Class<?> type) {
         return (Map) applicationContext.getBeansOfType((Class) type);
@@ -78,5 +111,9 @@ public class SpringBeanImplementationResolver {
     private Class<?> resolveTargetClass(Object bean) {
         Class<?> targetClass = AopUtils.getTargetClass(bean);
         return targetClass != null ? targetClass : bean.getClass();
+    }
+
+    private boolean isConcreteClass(Class<?> candidate) {
+        return !candidate.isInterface() && !Modifier.isAbstract(candidate.getModifiers());
     }
 }

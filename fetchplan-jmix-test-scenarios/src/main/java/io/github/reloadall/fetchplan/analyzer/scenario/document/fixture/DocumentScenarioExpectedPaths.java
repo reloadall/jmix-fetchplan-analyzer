@@ -59,6 +59,11 @@ public final class DocumentScenarioExpectedPaths {
             "lines.product.sku"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
+            "contract.number",
+            "contract.customer.name"
+    );
+
     private DocumentScenarioExpectedPaths() {
     }
 }

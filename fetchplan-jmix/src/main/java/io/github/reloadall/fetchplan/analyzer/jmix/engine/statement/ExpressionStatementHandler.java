@@ -254,8 +254,19 @@ public class ExpressionStatementHandler implements StatementHandler {
 
         if (interprocPlan.isPresent()) {
             return StatementHandleResult.customContinuations(
-                    List.of(interprocPlan.get().getTargetMethodContinuation())
+                    interprocPlan.get().getTargetMethodContinuations()
             );
+        }
+
+        Optional<InterprocCallPlan> fanOutPlan = interprocCallPlanner.planFanOut(
+                rawTree,
+                step,
+                expr,
+                context
+        );
+
+        if (fanOutPlan.isPresent()) {
+            return StatementHandleResult.customContinuations(fanOutPlan.get().getTargetMethodContinuations());
         }
 
         ExpressionResolutionResult callResult = context.getExpressionResolver().resolveAll(rawTree, step, expr, context);

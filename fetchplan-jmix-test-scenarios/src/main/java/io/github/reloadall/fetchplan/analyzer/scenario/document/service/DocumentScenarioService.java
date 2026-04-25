@@ -4,6 +4,7 @@ import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Address;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Contract;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.DocumentLine;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,14 +14,17 @@ public class DocumentScenarioService {
     private final DocumentTypeReadService documentTypeReadService;
     private final ContractReadService contractReadService;
     private final LineReadService lineReadService;
+    private final List<DocumentWorker> workers;
 
     @Autowired
     public DocumentScenarioService(DocumentTypeReadService documentTypeReadService,
                                    ContractReadService contractReadService,
-                                   LineReadService lineReadService) {
+                                   LineReadService lineReadService,
+                                   List<DocumentWorker> workers) {
         this.documentTypeReadService = documentTypeReadService;
         this.contractReadService = contractReadService;
         this.lineReadService = lineReadService;
+        this.workers = workers;
     }
 
     public void inspectDocument(Document document) {
@@ -90,6 +94,12 @@ public class DocumentScenarioService {
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
+    }
+
+    public void inspectDocumentWithWorkers(Document document) {
+        for (DocumentWorker worker : workers) {
+            worker.process(document);
+        }
     }
 
     Address resolveShippingAddress(Document document) {

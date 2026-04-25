@@ -1,8 +1,10 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.CompilationUnit;
@@ -90,6 +92,35 @@ public class InterprocMethodResolver {
         return Optional.of(target);
     }
 
+    public List<MethodDeclaration> resolveAllOnConcreteClasses(MethodCallExpr methodCallExpr,
+                                                               Set<String> concreteTargetClassNames) {
+        Objects.requireNonNull(methodCallExpr, "methodCallExpr is null");
+        Objects.requireNonNull(concreteTargetClassNames, "concreteTargetClassNames is null");
+
+        Set<MethodDeclaration> result = new LinkedHashSet<>();
+        for (String concreteTargetClassName : concreteTargetClassNames) {
+            resolveOnConcreteClass(methodCallExpr, concreteTargetClassName)
+                    .ifPresent(result::add);
+        }
+        return List.copyOf(result);
+    }
+
+    public List<String> resolveCollectionElementImplementations(MethodDeclaration callerMethod, String scopeName) {
+        Optional<ResolvedTargetType> targetTypeOpt = resolveCollectionElementTargetType(callerMethod, scopeName);
+        if (targetTypeOpt.isEmpty()) {
+            return List.of();
+        }
+
+        Optional<Class<?>> declaredClassOpt = tryLoadClass(targetTypeOpt.get().getDeclaredTypeName());
+        if (declaredClassOpt.isEmpty()) {
+            return List.of();
+        }
+
+        return springBeanImplementationResolver.resolveImplementations(declaredClassOpt.get()).stream()
+                .map(Class::getName)
+                .toList();
+    }
+
     private Optional<CompilationUnit> loadCompilationUnit(String concreteTargetClassName) {
         Optional<java.nio.file.Path> javaFileOpt = sourceAnalysisCache.findJavaFile(concreteTargetClassName);
         if (javaFileOpt.isEmpty()) {
@@ -103,6 +134,30 @@ public class InterprocMethodResolver {
             analysisTrace.log("INTERPROC: failed to parse source file for class = " + concreteTargetClassName);
             return Optional.empty();
         }
+    }
+
+    private Optional<MethodDeclaration> resolveOnConcreteClass(MethodCallExpr methodCallExpr, String concreteTargetClassName) {
+        Optional<CompilationUnit> targetCompilationUnitOpt = loadCompilationUnit(concreteTargetClassName);
+        if (targetCompilationUnitOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        CompilationUnit targetCompilationUnit = targetCompilationUnitOpt.get();
+        String targetSimpleName = simpleName(concreteTargetClassName);
+
+        List<MethodDeclaration> matches = targetCompilationUnit.findAll(MethodDeclaration.class).stream()
+                .filter(method -> belongsToTargetType(method, targetSimpleName))
+                .filter(method -> method.getNameAsString().equals(methodCallExpr.getNameAsString()))
+                .filter(method -> method.getParameters().size() == methodCallExpr.getArguments().size())
+                .collect(Collectors.toList());
+
+        if (matches.size() != 1) {
+            analysisTrace.log("INTERPROC: target method unresolved or ambiguous for concrete class = "
+                    + concreteTargetClassName + ", call = " + methodCallExpr);
+            return Optional.empty();
+        }
+
+        return Optional.of(matches.get(0));
     }
 
     private Optional<String> resolveConcreteTargetClassName(ResolvedTargetType targetType) {
@@ -199,6 +254,44 @@ public class InterprocMethodResolver {
         }
 
         return Optional.empty();
+    }
+
+    Optional<ResolvedTargetType> resolveCollectionElementTargetType(MethodDeclaration callerMethod, String scopeName) {
+        Objects.requireNonNull(callerMethod, "callerMethod is null");
+        Objects.requireNonNull(scopeName, "scopeName is null");
+
+        CompilationUnit compilationUnit = callerMethod.findCompilationUnit().orElse(null);
+        if (compilationUnit == null) {
+            return Optional.empty();
+        }
+
+        TypeDeclaration<?> callerType = callerMethod.findAncestor(TypeDeclaration.class).orElse(null);
+        if (callerType == null) {
+            return Optional.empty();
+        }
+
+        Optional<String> declaredTypeName = resolveFieldType(callerType, scopeName)
+                .or(() -> resolveParameterType(callerMethod, scopeName))
+                .or(() -> resolveLocalVariableType(callerMethod, scopeName));
+
+        if (declaredTypeName.isEmpty()) {
+            return Optional.empty();
+        }
+
+        DeclaredTypeDescriptor descriptor = DeclaredTypeDescriptor.parse(declaredTypeName.get());
+        if (!descriptor.isSupportedCollectionContainer()) {
+            return Optional.empty();
+        }
+
+        Optional<String> elementTypeName = descriptor.getCollectionElementTypeName();
+        if (elementTypeName.isEmpty()) {
+            analysisTrace.log("INTERPROC: collection container without supported element type for scope = " + scopeName
+                    + ", declaredType = " + declaredTypeName.get());
+            return Optional.empty();
+        }
+
+        return resolveTypeNameToFqcn(compilationUnit, elementTypeName.get())
+                .map(fqcn -> new ResolvedTargetType(fqcn, scopeName, true));
     }
 
     private Optional<String> resolveFieldType(TypeDeclaration<?> callerType, String fieldName) {

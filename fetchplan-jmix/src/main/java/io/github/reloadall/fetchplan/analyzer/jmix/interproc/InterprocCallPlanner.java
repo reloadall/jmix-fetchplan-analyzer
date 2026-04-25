@@ -1,7 +1,9 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -160,6 +162,15 @@ public class InterprocCallPlanner {
                                                                AnalysisStep step,
                                                                MethodCallExpr methodCallExpr,
                                                                EngineContext context) {
+        Optional<List<TargetInvocation>> fanOutInvocations = resolveFanOutTargetInvocations(rawTree, step, methodCallExpr, context);
+        if (fanOutInvocations.isPresent()) {
+            List<TargetInvocation> invocations = fanOutInvocations.get();
+            if (invocations.size() == 1) {
+                return Optional.of(invocations.get(0));
+            }
+            return Optional.empty();
+        }
+
         Optional<MethodDeclaration> targetMethodOpt = interprocMethodResolver.resolve(methodCallExpr, step);
         if (targetMethodOpt.isEmpty()) {
             return Optional.empty();
@@ -185,6 +196,96 @@ public class InterprocCallPlanner {
         RawNode entryAnchor = resolveEntryAnchor(targetBindings, step.getCurrentRawNode());
 
         return Optional.of(new TargetInvocation(targetMethod, targetBindings, entryAnchor));
+    }
+
+    public Optional<InterprocCallPlan> planFanOut(RawTree rawTree,
+                                                  AnalysisStep step,
+                                                  MethodCallExpr methodCallExpr,
+                                                  EngineContext context) {
+        if (!(step.getPayload() instanceof StatementsPayload currentPayload)) {
+            return Optional.empty();
+        }
+
+        Optional<List<TargetInvocation>> targetInvocationsOpt = resolveFanOutTargetInvocations(rawTree, step, methodCallExpr, context);
+        if (targetInvocationsOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<TargetInvocation> targetInvocations = targetInvocationsOpt.get();
+        if (targetInvocations.isEmpty()) {
+            return Optional.empty();
+        }
+
+        StatementsPayload afterCallPayload = currentPayload.next();
+        List<Continuation> continuations = new ArrayList<>();
+
+        for (TargetInvocation targetInvocation : targetInvocations) {
+            Continuation returnToCaller = new Continuation(
+                    step.getMethod(),
+                    afterCallPayload,
+                    step.getCurrentRawNode(),
+                    step.copyBindings()
+            );
+
+            StatementsPayload targetPayload = StatementsPayload.from(targetInvocation.targetMethod)
+                    .withContinuationOnFinish(returnToCaller);
+
+            continuations.add(new Continuation(
+                    targetInvocation.targetMethod,
+                    targetPayload,
+                    targetInvocation.entryAnchor,
+                    targetInvocation.targetBindings
+            ));
+        }
+
+        return Optional.of(new InterprocCallPlan(continuations));
+    }
+
+    private Optional<List<TargetInvocation>> resolveFanOutTargetInvocations(RawTree rawTree,
+                                                                            AnalysisStep step,
+                                                                            MethodCallExpr methodCallExpr,
+                                                                            EngineContext context) {
+        if (methodCallExpr.getScope().isEmpty() || !methodCallExpr.getScope().get().isNameExpr()) {
+            return Optional.empty();
+        }
+
+        String scopeName = methodCallExpr.getScope().get().asNameExpr().getNameAsString();
+        ValueBinding binding = step.getBinding(scopeName);
+        if (binding == null || !binding.hasDispatchTargets()) {
+            return Optional.empty();
+        }
+
+        List<MethodDeclaration> targetMethods = interprocMethodResolver.resolveAllOnConcreteClasses(
+                methodCallExpr,
+                binding.getDispatchTargetClassNames()
+        );
+        if (targetMethods.isEmpty()) {
+            return Optional.of(List.of());
+        }
+
+        List<TargetInvocation> invocations = new ArrayList<>();
+        for (MethodDeclaration targetMethod : targetMethods) {
+            if (targetMethod.getBody().isEmpty()) {
+                continue;
+            }
+
+            Optional<Map<String, ValueBinding>> targetBindingsOpt = interprocArgumentBinder.bindArguments(
+                    rawTree,
+                    step,
+                    methodCallExpr,
+                    targetMethod,
+                    context
+            );
+            if (targetBindingsOpt.isEmpty()) {
+                continue;
+            }
+
+            Map<String, ValueBinding> targetBindings = targetBindingsOpt.get();
+            RawNode entryAnchor = resolveEntryAnchor(targetBindings, step.getCurrentRawNode());
+            invocations.add(new TargetInvocation(targetMethod, targetBindings, entryAnchor));
+        }
+
+        return Optional.of(invocations);
     }
 
     private ValueBinding bindReturnValue(RawTree rawTree,
