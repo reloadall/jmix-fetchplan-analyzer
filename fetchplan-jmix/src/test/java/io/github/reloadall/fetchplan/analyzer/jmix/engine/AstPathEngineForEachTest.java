@@ -17,6 +17,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.statement.ForEachState
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.statement.StatementHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.visited.VisitedKeyFactory;
 import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocCallPlanner;
+import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocMethodResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.normalize.RawTreeNormalizer;
 import io.github.reloadall.fetchplan.analyzer.jmix.path.PathTreeFlattener;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
@@ -44,7 +45,7 @@ class AstPathEngineForEachTest {
                 new UnknownBreakPolicy(),
                 interprocCallPlanner
         );
-        StatementHandler forEachStatementHandler = new ForEachStatementHandler();
+        StatementHandler forEachStatementHandler = new ForEachStatementHandler(mock(InterprocMethodResolver.class));
         StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(
                 List.of(expressionStatementHandler, forEachStatementHandler)
         );

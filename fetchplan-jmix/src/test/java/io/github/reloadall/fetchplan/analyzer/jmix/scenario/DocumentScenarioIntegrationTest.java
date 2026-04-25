@@ -1,6 +1,7 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.scenario;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -45,6 +46,9 @@ import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.Document
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioFetchPlanFixture;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentScenarioService;
 import org.junit.jupiter.api.Test;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentWorker;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ContractWorker;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.CustomerWorker;
 import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -159,6 +163,16 @@ class DocumentScenarioIntegrationTest {
         assertEquals(Set.of("<root>", "shippingAddress.city"), result.comparisonResult().getUncertainPaths());
     }
 
+    @Test
+    void analyzesWorkerCollectionScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithWorkers",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_WORKERS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_WORKERS_LEAF_PATHS
+        );
+    }
+
     private void assertScenario(String methodName,
                                 Set<String> expectedPaths,
                                 Set<String> allFetchPlanPaths,
@@ -189,7 +203,7 @@ class DocumentScenarioIntegrationTest {
         );
 
         SpringBeanImplementationResolver springBeanImplementationResolver = new SpringBeanImplementationResolver(
-                mock(ApplicationContext.class),
+                mockWorkerAwareApplicationContext(),
                 analysisTrace
         );
         InterprocMethodResolver interprocMethodResolver = new InterprocMethodResolver(
@@ -227,7 +241,7 @@ class DocumentScenarioIntegrationTest {
                 java.util.List.of(new StatementsPayloadHandler(java.util.List.of(
                         new ExpressionStatementHandler(new UnknownBreakPolicy(), interprocCallPlanner),
                         new IfStatementHandler(),
-                        new ForEachStatementHandler(),
+                        new ForEachStatementHandler(interprocMethodResolver),
                         new ReturnStatementHandler(new UnknownBreakPolicy())
                 ))),
                 engineContext,
@@ -268,5 +282,14 @@ class DocumentScenarioIntegrationTest {
     private record ScenarioResult(Set<String> analyzedPaths,
                                   Set<String> rawUncertainPaths,
                                   PathComparisonResult comparisonResult) {
+    }
+
+    private ApplicationContext mockWorkerAwareApplicationContext() {
+        ApplicationContext applicationContext = mock(ApplicationContext.class);
+        when(applicationContext.getBeansOfType(DocumentWorker.class)).thenReturn((Map) Map.of(
+                "contractWorker", new ContractWorker(),
+                "customerWorker", new CustomerWorker()
+        ));
+        return applicationContext;
     }
 }

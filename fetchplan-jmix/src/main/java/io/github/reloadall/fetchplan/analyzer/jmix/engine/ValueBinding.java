@@ -11,11 +11,20 @@ import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 public class ValueBinding {
     private final Set<RawNode> nodes;
     private final boolean uncertain;
+    private final Set<String> dispatchTargetClassNames;
 
     public ValueBinding(Set<RawNode> nodes, boolean uncertain) {
+        this(nodes, uncertain, Set.of());
+    }
+
+    public ValueBinding(Set<RawNode> nodes,
+                        boolean uncertain,
+                        Set<String> dispatchTargetClassNames) {
         Objects.requireNonNull(nodes, "nodes is null");
+        Objects.requireNonNull(dispatchTargetClassNames, "dispatchTargetClassNames is null");
         this.nodes = Collections.unmodifiableSet(new LinkedHashSet<>(nodes));
         this.uncertain = uncertain;
+        this.dispatchTargetClassNames = Collections.unmodifiableSet(new LinkedHashSet<>(dispatchTargetClassNames));
     }
 
     public static ValueBinding empty() {
@@ -40,12 +49,24 @@ public class ValueBinding {
         return new ValueBinding(result.getNodes(), result.isUncertain());
     }
 
+    public static ValueBinding forDispatchTargets(Set<String> dispatchTargetClassNames, boolean uncertain) {
+        return new ValueBinding(Set.of(), uncertain, dispatchTargetClassNames);
+    }
+
     public Set<RawNode> getNodes() {
         return nodes;
     }
 
     public boolean isUncertain() {
         return uncertain;
+    }
+
+    public Set<String> getDispatchTargetClassNames() {
+        return dispatchTargetClassNames;
+    }
+
+    public boolean hasDispatchTargets() {
+        return !dispatchTargetClassNames.isEmpty();
     }
 
     public boolean isEmpty() {
@@ -66,6 +87,9 @@ public class ValueBinding {
         Set<RawNode> merged = new LinkedHashSet<>(this.nodes);
         merged.addAll(other.nodes);
 
-        return new ValueBinding(merged, this.uncertain || other.uncertain);
+        Set<String> mergedDispatchTargets = new LinkedHashSet<>(this.dispatchTargetClassNames);
+        mergedDispatchTargets.addAll(other.dispatchTargetClassNames);
+
+        return new ValueBinding(merged, this.uncertain || other.uncertain, mergedDispatchTargets);
     }
 }

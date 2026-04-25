@@ -363,3 +363,51 @@ Status values used below:
   - `gradlew.bat :fetchplan-jmix:test`
   - `gradlew.bat :fetchplan-jmix:test --tests io.github.reloadall.fetchplan.analyzer.jmix.scenario.DocumentScenarioIntegrationTest`
   - `gradlew.bat :fetchplan-jmix:test --tests io.github.reloadall.fetchplan.analyzer.jmix.interproc.ReturnRebindingCanonicalOutputTest`
+
+---
+
+## ISSUE-016 — General collection-injected Spring worker dispatch remains only partially supported
+
+- Status: `PARTIALLY MITIGATED`
+- Area: interprocedural Spring bean resolution / foreach dispatch / scenario integration
+- Found during: investigation of `List<DocumentWorker>` worker-fan-out pattern from real Jmix/Spring projects
+- Summary:
+  The analyzer now supports a narrow foreach-based worker fan-out pattern, but broader collection-injected
+  Spring worker dispatch semantics are still not implemented.
+- Desired scenario:
+  `DocumentScenarioService.inspectDocumentWithWorkers(Document document)` iterates over constructor-injected
+  `List<DocumentWorker>` and calls `worker.process(document)` for two `@Service` implementations:
+  `ContractWorker` and `CustomerWorker`.
+- Desired canonical paths:
+  - `contract.number`
+  - `contract.customer.name`
+- Current behavior gap:
+  The original gap was that resolution was built around one resolved target type/method and did not support
+  collection element type extraction plus multi-implementation dispatch for Spring bean collections.
+- Mitigation so far:
+  Added lower-level support for:
+  - supported collection container detection for `List<T>`, `Collection<T>`, and `Iterable<T>`;
+  - generic element type extraction for simple supported shapes;
+  - read-only multi-bean implementation lookup in `SpringBeanImplementationResolver` with deterministic ordering.
+- Implemented scope:
+  Implemented a narrow foreach fan-out shape:
+  `for (Worker worker : workers) { worker.process(document); }`
+  where `workers` is `List<T>` / `Collection<T>` / `Iterable<T>`, element implementations are resolved,
+  the loop variable directly scopes the method call, and the scenario is now covered by focused regression
+  and scenario integration tests.
+- Evidence:
+  - `DocumentScenarioIntegrationTest.analyzesWorkerCollectionScenarioAndMatchesFixturePaths()` is now enabled and green.
+  - `AstPathEngineForEachWorkerFanOutTest.fansOutForeachOverInjectedWorkersToAllResolvedImplementations()` covers
+    the minimal worker fan-out path through engine/interproc wiring.
+- Remaining unsupported patterns:
+  - `workers.forEach(...)`;
+  - stream/lambda-based worker dispatch;
+  - `supports(...)` filtering or other selective worker execution semantics;
+  - qualifier / `@Primary` / ordering-aware worker selection;
+  - registry-style worker dispatch such as `Map<String, Worker>`;
+  - broader generalized collection-injected bean dispatch semantics.
+- Suggested next step:
+  Keep support narrow and incremental. Remaining candidates:
+  1. `workers.forEach(...)` / stream/lambda worker dispatch;
+  2. qualifier / ordering / filtering semantics;
+  3. broader collection and registry shapes such as `Map<String, Worker>`.

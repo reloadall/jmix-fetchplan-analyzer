@@ -131,6 +131,18 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines.product.sku"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
+            "contract",
+            "contract.number",
+            "contract.customer",
+            "contract.customer.name"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_LEAF_PATHS = Set.of(
+            "contract.number",
+            "contract.customer.name"
+    );
+
     private DocumentScenarioFetchPlanFixture() {
     }
 }
