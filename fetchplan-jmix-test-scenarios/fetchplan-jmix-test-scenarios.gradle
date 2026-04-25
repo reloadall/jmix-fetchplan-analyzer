@@ -1,0 +1,13 @@
+archivesBaseName = 'fetchplan-jmix-test-scenarios'
+
+jmix {
+    entitiesEnhancing {
+        enabled = false
+    }
+}
+
+dependencies {
+    compileOnly 'io.jmix.core:jmix-core'
+    compileOnly 'javax.persistence:javax.persistence-api:2.2'
+    compileOnly 'org.springframework:spring-context'
+}

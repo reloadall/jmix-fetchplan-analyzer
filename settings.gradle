@@ -2,6 +2,7 @@ rootProject.name = 'jmix-fetchplan-analyzer'
 
 include 'fetchplan-jmix'
 include 'fetchplan-jmix-starter'
+include 'fetchplan-jmix-test-scenarios'
 
 rootProject.children.each { p1 ->
     p1.buildFileName = "${p1.name}.gradle"
