@@ -88,6 +88,14 @@ Currently covered by scenario integration:
 - narrow collection-injected worker fan-out via `inspectDocumentWithWorkers(Document document)` for:
   `for (Worker worker : workers) { worker.process(document); }`
   where `workers` is `List<T>` / `Collection<T>` / `Iterable<T>` and Spring bean implementations are resolved.
+- Lombok-style constructor-injected single-bean interprocedural call via
+  `SyntheticLombokScenarioService.inspectDocumentWithLombokServiceCall(RootDocument document)`
+  where a `private final` service field declared in source is used to call another service method and
+  caller code continues from the returned entity with a leaf getter.
+- chained cross-service return rebinding via
+  `SyntheticLombokScenarioService.inspectDocumentWithChainedFinders(RootDocument document)`
+  where one finder returns an entity rooted at the source document and later finders continue from that
+  returned entity to deeper leaf fields.
 
 Still not scenario-covered as supported generalized worker dispatch:
 
@@ -98,6 +106,8 @@ Important note:
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the minimal chained method-reference pattern are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
+- structural parent/container paths with deeper analyzed descendants are treated as containers, not as standalone analyzed
+  terminal paths; they should not inflate `Covered`, and hierarchical coverage is not a separate report concept yet.
 
 Do not treat it as:
 - a proof engine for arbitrary Java

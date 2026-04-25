@@ -411,3 +411,99 @@ Status values used below:
   1. `workers.forEach(...)` / stream/lambda worker dispatch;
   2. qualifier / ordering / filtering semantics;
   3. broader collection and registry shapes such as `Map<String, Worker>`.
+
+---
+
+## ISSUE-017 — Lombok-style constructor-injected single-bean service-call scenario relies on declared source field type, not Lombok-generated constructor analysis
+
+- Status: `PARTIALLY MITIGATED`
+- Area: scenario integration / interprocedural field-based target resolution
+- Found during: addition of a focused Lombok-style single-bean scenario
+- Summary:
+  The analyzer can resolve a service call through a Lombok-style `private final` field when the declared field type is
+  visible in source, but this does not imply any deeper analysis of generated constructor bytecode or broader Lombok semantics.
+- Covered scenario:
+  `SyntheticLombokScenarioService.inspectDocumentWithLombokServiceCall(RootDocument document)` calls
+  `routeInfoFinder.findRouteInfo(document, log)` through a `@RequiredArgsConstructor`-style final field and continues to
+  `detail.parentDetail.document.routeInfo.code`.
+- Why this matters:
+  This matches a common Spring/Lombok source shape while keeping support honest and narrow.
+- Remaining limitation:
+  The analyzer still relies on declared source field types and existing interproc rules; it does not inspect generated
+  constructors, Lombok transformations, repository reloads, multi-origin returns, or recursive helper flows.
+
+---
+
+## ISSUE-018 — Chained cross-service return rebinding is covered for a narrow synthetic happy path, but broader multi-service return semantics remain risky
+
+- Status: `PARTIALLY MITIGATED`
+- Area: interprocedural return rebinding / scenario integration
+- Found during: addition of chained synthetic finder scenario
+- Summary:
+  The analyzer now covers a narrow chain where one service returns an entity and later services continue from that
+  returned origin, but this should not be overstated as general support for arbitrary chained service graphs.
+- Covered scenario:
+  `SyntheticLombokScenarioService.inspectDocumentWithChainedFinders(RootDocument document)` now verifies:
+  - `detail.parentDetail.document.routeInfo.vendorInfo.code`
+  - `detail.parentDetail.document.routeInfo.groupInfo.code`
+- Remaining limitation:
+  This does not yet cover multi-origin returns, recursive helpers, repository reload flows, or broader ambiguous
+  rebinding semantics across more complex service graphs.
+
+---
+
+## ISSUE-019 — Multi-origin return rebinding remains uncovered until dedicated synthetic scenario is verified
+
+- Status: `OPEN`
+- Area: interprocedural return rebinding / multi-origin return semantics
+- Found during: planning of synthetic multi-origin agreement scenario
+- Summary:
+  The analyzer still needs explicit verification for a method that may return one of two different origin paths and then
+  allows the caller to continue nested access from that returned entity.
+- Desired scenario:
+  `AgreementFinder.findAgreement(VendorInfo vendorInfo, GroupInfo groupInfo, ScenarioLog log)` returning from either
+  `vendorInfo.getAgreement()` or `groupInfo.getAgreement()`, followed by caller access to
+  `agreement.getSides().getCounterparty().getName()`.
+- Desired canonical paths:
+  - `detail.parentDetail.document.routeInfo.vendorInfo.agreement.sides.counterparty.name`
+  - `detail.parentDetail.document.routeInfo.groupInfo.agreement.sides.counterparty.name`
+- Risk:
+  Current analyzer behavior may follow only one return origin, drop a branch, emit structural parents, or surface
+  unnecessary uncertainty.
+
+---
+
+## ISSUE-020 — Covered semantics for declared parent paths became ambiguous after structural parent cleanup in return rebinding flows
+
+- Status: `OPEN`
+- Area: comparison / reporting semantics / parent-path coverage policy
+- Found during: validation of real anonymized reports after return rebinding cleanup
+- Summary:
+  After cleanup of structural parent noise in return-rebinding output, aggregate report metrics worsened
+  (`Analyzed: 45 -> 41`, `Covered: 16 -> 12`) even though no leaf paths were lost and `Missing` did not increase
+  (`28 -> 28`).
+- Evidence:
+  Removed analyzed/covered paths were only structural parents:
+  - `iii`
+  - `yyy.cccc.dddd.eeee.iiii`
+  - `yyy.cccc.dddd.eeee.iiii.aaa`
+  - `yyy.cccc.dddd.eeee.nnnn`
+  and each still had deeper analyzed descendants after the change.
+- Why this matters:
+  This indicates a policy question in comparison/report semantics rather than an extraction regression.
+  Current reporting may undercount `Covered` when a declared parent path is no longer emitted explicitly,
+  even though deeper analyzed descendants still prove traversal through that parent.
+- Important note:
+  `ReturnStatementHandler` cleanup should **not** be reverted on the basis of these metrics alone.
+  The observed drop is currently consistent with structural parent cleanup, not with loss of useful leaf paths.
+- Current interpretation:
+  - no increase in `Missing`;
+  - no evidence of lost leaf paths;
+  - likely parent-path coverage policy / reporting issue.
+- Recommended next step:
+  Add focused comparator/report-level tests before any behavior change, specifically for the policy:
+  whether a declared parent path should be considered `Covered` when one or more deeper analyzed descendants remain.
+ - Status update:
+   Focused comparator tests were added to lock the policy that structural parent/container paths are not standalone
+   analyzed terminals, do not inflate `Covered`, and should stay suppressed from `Missing` when they are non-leaf
+   declared container paths with deeper analyzed descendants.

@@ -1,0 +1,59 @@
+package io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture;
+
+import java.util.Set;
+
+public final class SyntheticLombokScenarioFetchPlanFixture {
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_ALL_PATHS = Set.of(
+            "detail",
+            "detail.parentDetail",
+            "detail.parentDetail.document",
+            "detail.parentDetail.document.routeInfo",
+            "detail.parentDetail.document.routeInfo.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_LEAF_PATHS = Set.of(
+            "detail.parentDetail.document.routeInfo.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_CHAINED_FINDERS_ALL_PATHS = Set.of(
+            "detail",
+            "detail.parentDetail",
+            "detail.parentDetail.document",
+            "detail.parentDetail.document.routeInfo",
+            "detail.parentDetail.document.routeInfo.vendorInfo",
+            "detail.parentDetail.document.routeInfo.vendorInfo.code",
+            "detail.parentDetail.document.routeInfo.groupInfo",
+            "detail.parentDetail.document.routeInfo.groupInfo.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_CHAINED_FINDERS_LEAF_PATHS = Set.of(
+            "detail.parentDetail.document.routeInfo.vendorInfo.code",
+            "detail.parentDetail.document.routeInfo.groupInfo.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT_ALL_PATHS = Set.of(
+            "detail",
+            "detail.parentDetail",
+            "detail.parentDetail.document",
+            "detail.parentDetail.document.routeInfo",
+            "detail.parentDetail.document.routeInfo.vendorInfo",
+            "detail.parentDetail.document.routeInfo.vendorInfo.agreement",
+            "detail.parentDetail.document.routeInfo.vendorInfo.agreement.sides",
+            "detail.parentDetail.document.routeInfo.vendorInfo.agreement.sides.counterparty",
+            "detail.parentDetail.document.routeInfo.vendorInfo.agreement.sides.counterparty.name",
+            "detail.parentDetail.document.routeInfo.groupInfo",
+            "detail.parentDetail.document.routeInfo.groupInfo.agreement",
+            "detail.parentDetail.document.routeInfo.groupInfo.agreement.sides",
+            "detail.parentDetail.document.routeInfo.groupInfo.agreement.sides.counterparty",
+            "detail.parentDetail.document.routeInfo.groupInfo.agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT_LEAF_PATHS = Set.of(
+            "detail.parentDetail.document.routeInfo.vendorInfo.agreement.sides.counterparty.name",
+            "detail.parentDetail.document.routeInfo.groupInfo.agreement.sides.counterparty.name"
+    );
+
+    private SyntheticLombokScenarioFetchPlanFixture() {
+    }
+}
