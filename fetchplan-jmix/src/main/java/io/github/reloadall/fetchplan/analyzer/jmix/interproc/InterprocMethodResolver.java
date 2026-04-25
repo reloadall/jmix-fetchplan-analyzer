@@ -1,14 +1,10 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -20,7 +16,7 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
-import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
+import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceAnalysisCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,20 +24,20 @@ import org.springframework.stereotype.Component;
 public class InterprocMethodResolver {
 
     private final SpringBeanImplementationResolver springBeanImplementationResolver;
-    private final SourceRootsResolver sourceRootsResolver;
+    private final SourceAnalysisCache sourceAnalysisCache;
     private final AnalysisTrace analysisTrace;
 
     @Autowired
     public InterprocMethodResolver(SpringBeanImplementationResolver springBeanImplementationResolver,
-                                   SourceRootsResolver sourceRootsResolver,
+                                   SourceAnalysisCache sourceAnalysisCache,
                                    AnalysisTrace analysisTrace) {
         this.springBeanImplementationResolver = Objects.requireNonNull(
                 springBeanImplementationResolver,
                 "springBeanImplementationResolver is null"
         );
-        this.sourceRootsResolver = Objects.requireNonNull(
-                sourceRootsResolver,
-                "sourceRootsResolver is null"
+        this.sourceAnalysisCache = Objects.requireNonNull(
+                sourceAnalysisCache,
+                "sourceAnalysisCache is null"
         );
         this.analysisTrace = Objects.requireNonNull(analysisTrace, "analysisTrace is null");
     }
@@ -65,17 +61,12 @@ public class InterprocMethodResolver {
         String concreteTargetClassName = concreteTargetClassNameOpt.get();
         analysisTrace.log("INTERPROC: concrete target class = " + concreteTargetClassName);
 
-        List<Path> sourceRoots = sourceRootsResolver.resolveMainJavaSourceRoots();
-        Path javaFile = findJavaFile(sourceRoots, concreteTargetClassName);
-        if (javaFile == null) {
-            analysisTrace.log("INTERPROC: source file not found for class = " + concreteTargetClassName);
+        Optional<CompilationUnit> targetCompilationUnitOpt = loadCompilationUnit(concreteTargetClassName);
+        if (targetCompilationUnitOpt.isEmpty()) {
             return Optional.empty();
         }
 
-        CompilationUnit targetCompilationUnit = parse(javaFile);
-        if (targetCompilationUnit == null) {
-            return Optional.empty();
-        }
+        CompilationUnit targetCompilationUnit = targetCompilationUnitOpt.get();
 
         String targetSimpleName = simpleName(concreteTargetClassName);
 
@@ -97,6 +88,21 @@ public class InterprocMethodResolver {
                 + "(" + target.getParameters().stream().map(p -> p.getType().asString()).collect(Collectors.joining(", "))
                 + ")");
         return Optional.of(target);
+    }
+
+    private Optional<CompilationUnit> loadCompilationUnit(String concreteTargetClassName) {
+        Optional<java.nio.file.Path> javaFileOpt = sourceAnalysisCache.findJavaFile(concreteTargetClassName);
+        if (javaFileOpt.isEmpty()) {
+            analysisTrace.log("INTERPROC: source file not found for class = " + concreteTargetClassName);
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(sourceAnalysisCache.getCompilationUnit(javaFileOpt.get()));
+        } catch (IllegalStateException ex) {
+            analysisTrace.log("INTERPROC: failed to parse source file for class = " + concreteTargetClassName);
+            return Optional.empty();
+        }
     }
 
     private Optional<String> resolveConcreteTargetClassName(ResolvedTargetType targetType) {
@@ -274,27 +280,6 @@ public class InterprocMethodResolver {
         }
 
         return value.trim();
-    }
-
-    private Path findJavaFile(List<Path> sourceRoots, String targetClassName) {
-        String relativePath = targetClassName.replace('.', '/') + ".java";
-
-        for (Path sourceRoot : sourceRoots) {
-            Path candidate = sourceRoot.resolve(relativePath).normalize();
-            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                return candidate;
-            }
-        }
-
-        return null;
-    }
-
-    private CompilationUnit parse(Path javaFile) {
-        try {
-            return StaticJavaParser.parse(javaFile);
-        } catch (IOException e) {
-            return null;
-        }
     }
 
     private boolean belongsToTargetType(MethodDeclaration method, String targetSimpleName) {

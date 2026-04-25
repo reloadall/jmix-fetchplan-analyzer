@@ -1,33 +1,38 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.source;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_SourceMethodResolver")
 public class SourceMethodResolver {
 
-    public MethodDeclaration resolve(List<Path> sourceRoots,
-                                     String targetClassName,
+    private final SourceAnalysisCache sourceAnalysisCache;
+
+    @Autowired
+    public SourceMethodResolver(SourceAnalysisCache sourceAnalysisCache) {
+        this.sourceAnalysisCache = Objects.requireNonNull(sourceAnalysisCache, "sourceAnalysisCache is null");
+    }
+
+    public MethodDeclaration resolve(String targetClassName,
                                      String methodName,
                                      String rootParamName,
                                      String rootParamType) {
-        Objects.requireNonNull(sourceRoots, "sourceRoots is null");
         Objects.requireNonNull(targetClassName, "targetClassName is null");
         Objects.requireNonNull(methodName, "methodName is null");
         Objects.requireNonNull(rootParamName, "rootParamName is null");
         Objects.requireNonNull(rootParamType, "rootParamType is null");
 
-        Path javaFile = findJavaFile(sourceRoots, targetClassName);
-        CompilationUnit compilationUnit = parse(javaFile);
+        CompilationUnit compilationUnit = sourceAnalysisCache.findJavaFile(targetClassName)
+                .map(sourceAnalysisCache::getCompilationUnit)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Java source file not found for class: " + targetClassName
+                ));
 
         String targetSimpleName = simpleName(targetClassName);
 
@@ -57,27 +62,6 @@ public class SourceMethodResolver {
         }
 
         return candidates.get(0);
-    }
-
-    private Path findJavaFile(List<Path> sourceRoots, String targetClassName) {
-        String relativePath = targetClassName.replace('.', '/') + ".java";
-
-        for (Path sourceRoot : sourceRoots) {
-            Path candidate = sourceRoot.resolve(relativePath).normalize();
-            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                return candidate;
-            }
-        }
-
-        throw new IllegalArgumentException("Java source file not found for class: " + targetClassName);
-    }
-
-    private CompilationUnit parse(Path javaFile) {
-        try {
-            return StaticJavaParser.parse(javaFile);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to parse java file: " + javaFile, e);
-        }
     }
 
     private boolean belongsToTargetType(MethodDeclaration method, String targetSimpleName) {

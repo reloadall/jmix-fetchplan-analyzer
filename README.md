@@ -91,6 +91,28 @@ See `docs/SUPPORTED_SCOPE.md` for details and limitations.
 - `docs/DECISIONS.md` — important design decisions
 - `docs/EXAMPLES.md` — sample inputs and outputs
 - `docs/FEEDBACK_TEMPLATE.md` — how to report unsupported cases
+- `fetchplan-jmix-test-scenarios` — source-fixture / living-documentation module for regression scenarios analyzed by tests
+
+## Scenario fixture module
+
+The repository includes `fetchplan-jmix-test-scenarios`, a dedicated source-fixture module.
+
+- It uses `src/main/java` intentionally because the analyzer scans it as regular source code.
+- The code in this module is **not production application logic**; it is analyzable fixture code for regression and integration tests.
+- The current document-oriented scenario now includes one baseline root flow plus multiple focused root methods for isolated analyzer capabilities.
+- The baseline root remains `DocumentScenarioService.inspectDocument(Document document)`.
+- Additional focused roots cover branch flow, collection `get(0)`, explicit `this` call, value-call assignment, local alias rebinding, alias chain, cast-based continuation, narrow chained `stream().map(MethodRef)`, and one uncertainty case.
+
+Current limitation:
+
+- the scenario currently stores fetch-plan expectations as a plain path-set fixture rather than a production-like Jmix `FetchPlan` object;
+- this keeps the scenario integration test small and avoids broad analyzer changes at this stage.
+- object-reference terminal usage without deeper property access still has an explicit open policy question; see `docs/ISSUES_TRACKER.md` (`ISSUE-013`).
+
+Current test status:
+
+- focused scenario and interprocedural regression tests are in place;
+- the full `fetchplan-jmix` test task is currently green, including the legacy Spring context smoke test.
 
 ## Intended usage
 

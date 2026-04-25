@@ -1,7 +1,5 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.debug;
 
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -19,7 +17,6 @@ import io.github.reloadall.fetchplan.analyzer.jmix.path.PathTreeFlattener;
 import io.github.reloadall.fetchplan.analyzer.jmix.report.AnalysisReport;
 import io.github.reloadall.fetchplan.analyzer.jmix.report.AnalysisReportFormatter;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceMethodResolver;
-import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.jmix.core.FetchPlan;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +43,6 @@ public class AstPathAnalyzeMBean {
     private final PathComparator pathComparator;
     private final RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor;
     private final AnalysisReportFormatter analysisReportFormatter;
-    private final SourceRootsResolver sourceRootsResolver;
     private final AnalysisTrace analysisTrace;
 
     @Autowired
@@ -61,7 +57,6 @@ public class AstPathAnalyzeMBean {
                                PathComparator pathComparator,
                                RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor,
                                AnalysisReportFormatter analysisReportFormatter,
-                               SourceRootsResolver sourceRootsResolver,
                                AnalysisTrace analysisTrace) {
         this.sourceMethodResolver = sourceMethodResolver;
         this.astPathEngine = astPathEngine;
@@ -74,7 +69,6 @@ public class AstPathAnalyzeMBean {
         this.pathComparator = pathComparator;
         this.rawTreeUncertaintyExtractor = rawTreeUncertaintyExtractor;
         this.analysisReportFormatter = analysisReportFormatter;
-        this.sourceRootsResolver = sourceRootsResolver;
         this.analysisTrace = analysisTrace;
     }
 
@@ -184,10 +178,7 @@ public class AstPathAnalyzeMBean {
         Objects.requireNonNull(rootParamName, "rootParamName is null");
         Objects.requireNonNull(rootParamType, "rootParamType is null");
 
-        List<Path> javaDirs = sourceRootsResolver.resolveMainJavaSourceRoots();
-
         MethodDeclaration method = sourceMethodResolver.resolve(
-                javaDirs,
                 targetClass,
                 methodName,
                 rootParamName,
