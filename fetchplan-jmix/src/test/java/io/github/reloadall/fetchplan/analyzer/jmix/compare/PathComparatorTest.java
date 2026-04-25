@@ -31,35 +31,57 @@ class PathComparatorTest {
     }
 
     @Test
-    void marksParentAnalyzedPathAsCoveredWhenDeeperDeclaredLeafExists() {
+    void doesNotInflateCoveredWithDeclaredStructuralParentWhenOnlyDeeperLeafIsAnalyzed() {
         FetchPlanPathSet fetchPlanPathSet = new FetchPlanPathSet(
-                Set.of("employee", "employee.department", "employee.department.name"),
-                Set.of("employee.department.name")
+                Set.of("agreement", "agreement.sides", "agreement.sides.counterparty", "agreement.sides.counterparty.name"),
+                Set.of("agreement.sides.counterparty.name")
         );
 
         PathComparisonResult result = comparator.compare(
-                Set.of("employee.department"),
+                Set.of("agreement.sides.counterparty.name"),
                 fetchPlanPathSet,
                 Set.of()
         );
 
-        assertEquals(Set.of("employee.department"), result.getMatchedPaths());
+        assertEquals(Set.of("agreement.sides.counterparty.name"), result.getMatchedPaths());
         assertEquals(Set.of(), result.getMissingPaths());
-        assertEquals(Set.of("employee.department.name"), result.getExtraPaths());
+        assertEquals(Set.of(), result.getExtraPaths());
         assertEquals(Set.of(), result.getUncertainPaths());
     }
 
     @Test
-    void removesStructuralParentFromMissingWhenDeeperMissingExists() {
-        FetchPlanPathSet fetchPlanPathSet = new FetchPlanPathSet(Set.of(), Set.of());
+    void suppressesStructuralParentFromMissingWhenDeeperDeclaredLeafIsAnalyzed() {
+        FetchPlanPathSet fetchPlanPathSet = new FetchPlanPathSet(
+                Set.of("agreement", "agreement.sides", "agreement.sides.counterparty", "agreement.sides.counterparty.name"),
+                Set.of("agreement.sides.counterparty.name")
+        );
 
         PathComparisonResult result = comparator.compare(
-                Set.of("employee", "employee.department", "employee.department.name"),
+                Set.of("agreement.sides.counterparty.name"),
                 fetchPlanPathSet,
                 Set.of()
         );
 
-        assertEquals(Set.of("employee.department.name"), result.getMissingPaths());
+        assertEquals(Set.of(), result.getMissingPaths());
+    }
+
+    @Test
+    void keepsRealDeclaredLeafMissingWhenNoAnalyzedLeafExists() {
+        FetchPlanPathSet fetchPlanPathSet = new FetchPlanPathSet(
+                Set.of("agreement", "agreement.sides", "agreement.sides.counterparty", "agreement.sides.counterparty.name"),
+                Set.of("agreement.sides.counterparty.name")
+        );
+
+        PathComparisonResult result = comparator.compare(
+                Set.of(),
+                fetchPlanPathSet,
+                Set.of()
+        );
+
+        assertEquals(Set.of(), result.getMatchedPaths());
+        assertEquals(Set.of("agreement.sides.counterparty.name"), result.getExtraPaths());
+        assertEquals(Set.of(), result.getMissingPaths());
+        assertEquals(Set.of(), result.getUncertainPaths());
     }
 
     @Test

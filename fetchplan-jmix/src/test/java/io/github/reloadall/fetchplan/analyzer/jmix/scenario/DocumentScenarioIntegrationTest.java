@@ -45,6 +45,10 @@ import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioExpectedPaths;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioFetchPlanFixture;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentScenarioService;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RootDocument;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture.SyntheticLombokScenarioExpectedPaths;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture.SyntheticLombokScenarioFetchPlanFixture;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticLombokScenarioService;
 import org.junit.jupiter.api.Test;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentWorker;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ContractWorker;
@@ -167,9 +171,51 @@ class DocumentScenarioIntegrationTest {
     void analyzesWorkerCollectionScenarioAndMatchesFixturePaths() {
         assertScenario(
                 "inspectDocumentWithWorkers",
+                DocumentScenarioService.class,
+                "document",
+                Document.class,
                 DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_WORKERS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_WORKERS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesLombokSingleBeanScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithLombokServiceCall",
+                SyntheticLombokScenarioService.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesChainedCrossServiceReturnRebindingScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithChainedFinders",
+                SyntheticLombokScenarioService.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_CHAINED_FINDERS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_CHAINED_FINDERS_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_CHAINED_FINDERS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesMultiOriginAgreementScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithMultiOriginAgreement",
+                SyntheticLombokScenarioService.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT_LEAF_PATHS
         );
     }
 
@@ -177,16 +223,57 @@ class DocumentScenarioIntegrationTest {
                                 Set<String> expectedPaths,
                                 Set<String> allFetchPlanPaths,
                                 Set<String> leafFetchPlanPaths) {
-        ScenarioResult result = analyzeScenario(methodName, allFetchPlanPaths, leafFetchPlanPaths);
+        assertScenario(
+                methodName,
+                DocumentScenarioService.class,
+                "document",
+                Document.class,
+                expectedPaths,
+                allFetchPlanPaths,
+                leafFetchPlanPaths
+        );
+    }
 
-        assertEquals(expectedPaths, result.analyzedPaths());
-        assertEquals(expectedPaths, result.comparisonResult().getMatchedPaths());
-        assertEquals(Set.of(), result.comparisonResult().getMissingPaths());
-        assertEquals(Set.of(), result.comparisonResult().getExtraPaths());
-        assertEquals(Set.of(), result.comparisonResult().getUncertainPaths());
+    private void assertScenario(String methodName,
+                                Class<?> targetServiceClass,
+                                String rootParameterName,
+                                Class<?> rootParameterType,
+                                Set<String> expectedPaths,
+                                Set<String> allFetchPlanPaths,
+                                Set<String> leafFetchPlanPaths) {
+        ScenarioResult result = analyzeScenario(
+                targetServiceClass,
+                methodName,
+                rootParameterName,
+                rootParameterType,
+                allFetchPlanPaths,
+                leafFetchPlanPaths
+        );
+
+        assertEquals(expectedPaths, result.analyzedPaths(), result.trace());
+        assertEquals(expectedPaths, result.comparisonResult().getMatchedPaths(), result.trace());
+        assertEquals(Set.of(), result.comparisonResult().getMissingPaths(), result.trace());
+        assertEquals(Set.of(), result.comparisonResult().getExtraPaths(), result.trace());
+        assertEquals(Set.of(), result.comparisonResult().getUncertainPaths(), result.trace());
     }
 
     private ScenarioResult analyzeScenario(String methodName,
+                                           Set<String> allFetchPlanPaths,
+                                           Set<String> leafFetchPlanPaths) {
+        return analyzeScenario(
+                DocumentScenarioService.class,
+                methodName,
+                "document",
+                Document.class,
+                allFetchPlanPaths,
+                leafFetchPlanPaths
+        );
+    }
+
+    private ScenarioResult analyzeScenario(Class<?> targetServiceClass,
+                                           String methodName,
+                                           String rootParameterName,
+                                           Class<?> rootParameterType,
                                            Set<String> allFetchPlanPaths,
                                            Set<String> leafFetchPlanPaths) {
         AnalysisTrace analysisTrace = new AnalysisTrace();
@@ -255,13 +342,13 @@ class DocumentScenarioIntegrationTest {
         RawTreeUncertaintyExtractor rawTreeUncertaintyExtractor = new RawTreeUncertaintyExtractor();
 
         MethodDeclaration method = sourceMethodResolver.resolve(
-                DocumentScenarioService.class.getName(),
+                targetServiceClass.getName(),
                 methodName,
-                "document",
-                Document.class.getName()
+                rootParameterName,
+                rootParameterType.getName()
         );
 
-        RawTree rawTree = astPathEngine.analyze(method, "document");
+        RawTree rawTree = astPathEngine.analyze(method, rootParameterName);
         Set<String> analyzedPaths = pathTreeFlattener.flatten(rawTreeNormalizer.normalize(rawTree));
         Set<String> uncertainPaths = rawTreeUncertaintyExtractor.extract(rawTree);
 
@@ -276,12 +363,13 @@ class DocumentScenarioIntegrationTest {
                 uncertainPaths
         );
 
-        return new ScenarioResult(analyzedPaths, uncertainPaths, comparisonResult);
+        return new ScenarioResult(analyzedPaths, uncertainPaths, comparisonResult, analysisTrace.dump());
     }
 
     private record ScenarioResult(Set<String> analyzedPaths,
                                   Set<String> rawUncertainPaths,
-                                  PathComparisonResult comparisonResult) {
+                                  PathComparisonResult comparisonResult,
+                                  String trace) {
     }
 
     private ApplicationContext mockWorkerAwareApplicationContext() {

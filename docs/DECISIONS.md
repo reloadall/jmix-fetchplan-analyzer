@@ -87,3 +87,23 @@ Reason:
 
 Consequence:
 - comparison should be leaf-aware / structural-aware
+
+---
+
+## D-007 Structural parent paths are containers, not analyzed terminal coverage
+
+When a deeper useful descendant path is analyzed, structural parent/container paths should not be emitted as analyzed
+terminal paths only because they acted as intermediate anchors.
+
+Reason:
+- user-facing analyzed output should focus on useful terminal/leaf paths;
+- structural parents such as `agreement`, `agreement.sides`, or `vendorInfo` create noise if emitted as standalone
+  analyzed terminals while deeper descendants already exist;
+- hierarchical/structural coverage, if needed later, should be a separate reporting concept rather than mixed into
+  `Analyzed` or `Covered`.
+
+Consequence:
+- structural parent paths with deeper analyzed descendants should stay suppressed from terminal analyzed output;
+- `Covered` should not be inflated by those parent/container paths;
+- non-leaf declared container paths should not surface as missing when deeper analyzed descendants exist;
+- leaf/path-level strictness remains at the declared leaf level.

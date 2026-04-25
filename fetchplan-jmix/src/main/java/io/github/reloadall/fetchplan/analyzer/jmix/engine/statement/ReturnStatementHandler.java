@@ -80,19 +80,36 @@ public class ReturnStatementHandler implements StatementHandler {
             return false;
         }
 
-        return statementsPayload.getContinuationOnFinish() != null
-                && isTopLevelMethodBody(step, statementsPayload);
+        return returnsAcrossMethodBoundary(step, statementsPayload);
     }
 
     private StatementHandleResult returnToCallerIfNeeded(AnalysisStep step) {
         if (step.getPayload() instanceof StatementsPayload statementsPayload) {
             Continuation continuationOnFinish = statementsPayload.getContinuationOnFinish();
-            if (continuationOnFinish != null && isTopLevelMethodBody(step, statementsPayload)) {
+            if (continuationOnFinish != null && returnsAcrossMethodBoundary(step, statementsPayload)) {
                 return StatementHandleResult.customContinuations(List.of(continuationOnFinish));
             }
         }
 
         return StatementHandleResult.stop();
+    }
+
+    private boolean returnsAcrossMethodBoundary(AnalysisStep step, StatementsPayload payload) {
+        Continuation continuationOnFinish = payload.getContinuationOnFinish();
+
+        while (continuationOnFinish != null) {
+            if (continuationOnFinish.getMethod() != step.getMethod()) {
+                return true;
+            }
+
+            if (!(continuationOnFinish.getPayload() instanceof StatementsPayload nextPayload)) {
+                return false;
+            }
+
+            continuationOnFinish = nextPayload.getContinuationOnFinish();
+        }
+
+        return false;
     }
 
     private boolean isTopLevelMethodBody(AnalysisStep step, StatementsPayload payload) {
