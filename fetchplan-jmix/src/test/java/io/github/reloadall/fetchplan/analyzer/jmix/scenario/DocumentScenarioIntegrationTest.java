@@ -45,6 +45,7 @@ import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioExpectedPaths;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioFetchPlanFixture;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentScenarioService;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.BaseLine;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RootDocument;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture.SyntheticLombokScenarioExpectedPaths;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture.SyntheticLombokScenarioFetchPlanFixture;
@@ -216,6 +217,32 @@ class DocumentScenarioIntegrationTest {
                 SyntheticLombokScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT,
                 SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT_ALL_PATHS,
                 SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_MULTI_ORIGIN_AGREEMENT_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesHelperGuardedExplicitCastScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectLineWithTypeGuardAndCast",
+                SyntheticLombokScenarioService.class,
+                "line",
+                BaseLine.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_LINE_WITH_TYPE_GUARD_AND_CAST,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_LINE_WITH_TYPE_GUARD_AND_CAST_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_LINE_WITH_TYPE_GUARD_AND_CAST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesNegativeHelperGuardedExplicitCastScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectLineWithNegativeTypeGuardAndCast",
+                SyntheticLombokScenarioService.class,
+                "line",
+                BaseLine.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_LINE_WITH_NEGATIVE_TYPE_GUARD_AND_CAST,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_LINE_WITH_NEGATIVE_TYPE_GUARD_AND_CAST_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_LINE_WITH_NEGATIVE_TYPE_GUARD_AND_CAST_LEAF_PATHS
         );
     }
 

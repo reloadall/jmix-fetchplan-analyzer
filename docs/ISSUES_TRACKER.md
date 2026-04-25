@@ -507,3 +507,25 @@ Status values used below:
    Focused comparator tests were added to lock the policy that structural parent/container paths are not standalone
    analyzed terminals, do not inflate `Covered`, and should stay suppressed from `Missing` when they are non-leaf
    declared container paths with deeper analyzed descendants.
+
+---
+
+## ISSUE-021 — Helper-based type-check calls are not general narrowing primitives; first supported shape stays helper-guard plus explicit cast
+
+- Status: `PARTIALLY MITIGATED`
+- Area: cast continuation / branch-dependent subtype access / scenario integration
+- Found during: planning of the next dynamic type-check scenario
+- Summary:
+  Real code often uses helper-based boolean type checks before subtype-specific access, but current support should remain
+  narrow: the supported signal is the explicit Java cast inside the guarded branch, not the helper call itself.
+- Covered scenario:
+  `SyntheticLombokScenarioService.inspectLineWithTypeGuardAndCast(BaseLine line)` verifies extraction of:
+  - `header.agreement.sides.counterparty.name`
+  from a branch guarded by `lineTypeGuard.isSpecificLine(line)` followed by `(SpecificLine) line`.
+- Remaining limitation:
+  Helper calls such as `isSpecificLine(...)` are still not treated as general subtype-narrowing primitives without an
+  explicit cast or other supported continuation signal.
+- Status update:
+  Added a second focused scenario for negative helper guard + early return + explicit cast:
+  `SyntheticLombokScenarioService.inspectLineWithNegativeTypeGuardAndCast(BaseLine line)`.
+  The supported signal remains the explicit cast after the guard rather than the helper method itself.

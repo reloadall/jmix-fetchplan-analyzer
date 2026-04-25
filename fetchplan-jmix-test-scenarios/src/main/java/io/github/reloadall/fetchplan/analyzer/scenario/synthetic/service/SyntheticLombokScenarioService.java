@@ -3,6 +3,8 @@ package io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RootDocument;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RouteInfo;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.ScenarioLog;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.BaseLine;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.SpecificLine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ public class SyntheticLombokScenarioService {
     private final VendorInfoFinder vendorInfoFinder;
     private final GroupInfoFinder groupInfoFinder;
     private final AgreementFinder agreementFinder;
+    private final LineTypeGuard lineTypeGuard;
 
     public void inspectDocumentWithLombokServiceCall(RootDocument document) {
         ScenarioLog log = new ScenarioLog();
@@ -56,5 +59,29 @@ public class SyntheticLombokScenarioService {
         if (agreement != null) {
             agreement.getSides().getCounterparty().getName();
         }
+    }
+
+    public void inspectLineWithTypeGuardAndCast(BaseLine line) {
+        if (lineTypeGuard.isSpecificLine(line)) {
+            SpecificLine specificLine = (SpecificLine) line;
+            specificLine.getHeader()
+                    .getAgreement()
+                    .getSides()
+                    .getCounterparty()
+                    .getName();
+        }
+    }
+
+    public void inspectLineWithNegativeTypeGuardAndCast(BaseLine line) {
+        if (lineTypeGuard.isNotSpecificLine(line)) {
+            return;
+        }
+
+        SpecificLine specificLine = (SpecificLine) line;
+        specificLine.getHeader()
+                .getAgreement()
+                .getSides()
+                .getCounterparty()
+                .getName();
     }
 }
