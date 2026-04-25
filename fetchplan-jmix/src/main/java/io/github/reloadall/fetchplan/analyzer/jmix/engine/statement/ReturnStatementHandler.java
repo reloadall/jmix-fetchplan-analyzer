@@ -41,6 +41,7 @@ public class ReturnStatementHandler implements StatementHandler {
                                         Statement statement,
                                         EngineContext context) {
         ReturnStmt returnStmt = statement.asReturnStmt();
+        boolean returnsToCaller = returnsToCaller(step);
 
         if (returnStmt.getExpression().isEmpty()) {
             return returnToCallerIfNeeded(step);
@@ -59,17 +60,28 @@ public class ReturnStatementHandler implements StatementHandler {
             RawNode breakNode = rawTree.addUnknownBreak(
                     step.getCurrentRawNode(),
                     null,
-                    UsageKind.TERMINAL
+                    returnsToCaller ? UsageKind.INTERMEDIATE : UsageKind.TERMINAL
             );
-            breakNode.setUsageKind(UsageKind.TERMINAL);
+            breakNode.setUsageKind(returnsToCaller ? UsageKind.INTERMEDIATE : UsageKind.TERMINAL);
             return returnToCallerIfNeeded(step);
         }
 
-        for (RawNode node : result.getNodes()) {
-            node.setUsageKind(UsageKind.TERMINAL);
+        if (!returnsToCaller) {
+            for (RawNode node : result.getNodes()) {
+                node.setUsageKind(UsageKind.TERMINAL);
+            }
         }
 
         return returnToCallerIfNeeded(step);
+    }
+
+    private boolean returnsToCaller(AnalysisStep step) {
+        if (!(step.getPayload() instanceof StatementsPayload statementsPayload)) {
+            return false;
+        }
+
+        return statementsPayload.getContinuationOnFinish() != null
+                && isTopLevelMethodBody(step, statementsPayload);
     }
 
     private StatementHandleResult returnToCallerIfNeeded(AnalysisStep step) {

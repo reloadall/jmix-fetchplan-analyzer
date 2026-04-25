@@ -3,6 +3,7 @@ package io.github.reloadall.fetchplan.analyzer.jmix;
 import javax.sql.DataSource;
 
 import io.jmix.core.annotation.JmixModule;
+import io.jmix.ui.app.propertyfilter.dateinterval.RelativeDateTimeMomentProvider;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+
+import static org.mockito.Mockito.mock;
 
 @SpringBootConfiguration
 @EnableAutoConfiguration
@@ -27,5 +30,10 @@ public class FetchPlanAnalyzerJmixTestConfiguration {
                 .generateUniqueName(true)
                 .setType(EmbeddedDatabaseType.HSQL)
                 .build();
+    }
+
+    @Bean
+    RelativeDateTimeMomentProvider relativeDateTimeMomentProvider() {
+        return mock(RelativeDateTimeMomentProvider.class);
     }
 }

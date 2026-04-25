@@ -64,6 +64,28 @@ Use it as:
 - a fetch plan relevance detector
 - a source of feedback and unsupported cases
 
+## Scenario coverage in `fetchplan-jmix-test-scenarios`
+
+The scenario module now contains focused root methods with separate expected path sets.
+
+Currently covered by scenario integration:
+
+- baseline document flow via `DocumentScenarioService.inspectDocument(Document document)`;
+- `if / else` branch flow via `inspectDocumentBranch(Document document)`;
+- collection element access via `inspectFirstLine(Document document)` using `get(0)`;
+- explicit same-class `this.someMethod(...)` flow via `inspectDocumentWithThisCall(Document document)`;
+- value-call initializer / assignment flow via `inspectDocumentWithValueCall(Document document)`;
+- local alias rebinding via `inspectDocumentWithLocalAlias(Document document)`.
+- alias chain via `inspectDocumentWithAliasChain(Document document)`.
+- cast-based continuation via `inspectDocumentWithCast(Document document)`.
+- minimal `stream().map(MethodRef)` chain via `inspectDocumentWithStreamMap(Document document)`.
+- uncertainty / `UNKNOWN_BREAK` behavior via `inspectDocumentWithUnknownBreak(Document document)`.
+
+Important note:
+
+- these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
+- broader stream semantics beyond the minimal chained method-reference pattern are **not** yet documented as scenario-covered in this module.
+
 Do not treat it as:
 - a proof engine for arbitrary Java
 - a strict CI gate without project-specific validation
