@@ -5,6 +5,9 @@
 ### Intra-method patterns
 
 - direct getter chains
+- getter-like method calls are converted to canonical properties only when they match a metadata-backed entity field/property
+- simple computed getter bodies on entity classes are inspected best-effort to recover real backing property reads
+  such as `getCodeAsEnum() -> code` or `getInstanceName() -> code, name`
 - `if / else`
 - `foreach`
 - `list.get(0)`
@@ -54,6 +57,8 @@
 - arbitrary expression semantics
 - full event/usage counting
 - full path certainty scoring
+- computed/business entity getters are not emitted as fetch-plan properties when no metadata-backed property exists;
+  e.g. `getCodeAsEnum()` must not create canonical path `codeAsEnum` just because it looks like a getter.
 
 ## Important interpretation rule
 
@@ -70,6 +75,12 @@ Report interpretation note:
   not as clear overfetch.
 - default/system fields are ignored for fetch-plan comparison when they are declared as leaf paths;
 - in particular, `id` is not treated as a required fetch-plan coverage path.
+- computed/business getters are not fetch-plan paths unless backed by a real entity property.
+- for simple zero-arg computed getters declared on the entity itself, analyzer now inspects the getter body best-effort
+  and extracts real backing property reads instead of emitting fake computed property names.
+- supported simple body shapes currently include direct property getters, string concatenation / binary composition,
+  local variable rebinding before `return`, direct field access, and nested same-entity zero-arg computed getter calls.
+- complex computed logic remains best-effort and limited; unsupported bodies should not reintroduce fake canonical paths.
 
 ## Recommended usage model
 

@@ -645,3 +645,63 @@ Status values used below:
   - `deleteTs`
   - `deletedBy`
   Filtering applies to leaf system-field paths only and does not remove parent/container entity paths.
+
+---
+
+## ISSUE-026 — Getter-like business methods were treated as canonical fetch-plan properties by naming convention alone
+
+- Status: `RESOLVED`
+- Area: getter path extraction / canonical path correctness / report noise
+- Found during: investigation of remaining declared-not-confirmed paths after system/default field filtering
+- Summary:
+  The analyzer used pure getter naming convention (`getX()` / `isX()`) to emit canonical path segment `x`, even when the
+  method was a computed/business getter and `x` was not a real metadata-backed entity property.
+- Example:
+  `entity.getCodeAsEnum()` incorrectly produced canonical path `codeAsEnum` although no such persistent/Jmix property existed.
+- Root cause:
+  `MethodCallExpressionHandler` decapitalized getter-like method names directly and created `DIRECT` raw nodes without
+  validating that the target entity type actually contained a backed property with that name.
+- Resolution:
+  Added metadata-backed property validation in getter extraction:
+  - resolve the scope expression type when possible;
+  - if the scope type is an entity-like class, emit getter-derived property only when a non-static, non-transient,
+    non-`@Transient` backing field with that name exists;
+  - otherwise keep previous conservative fallback behavior for unresolved/non-entity scope types.
+- Verified behavior:
+  - persistent getter still works: `entity.getCode()` -> `code`;
+  - fake computed getter path is suppressed: `entity.getCodeAsEnum()` does not emit `codeAsEnum`;
+  - simple computed getter body analysis now recovers backing reads, e.g. `entity.getCodeAsEnum()` -> `code`;
+  - nested normal getter chains such as `order.getType().getCode()` remain supported.
+- Remaining limitation:
+  Computed getter body extraction is still intentionally narrow and best-effort. Complex logic, external calls,
+  repository reloads, arbitrary helper graphs, and broader side-effect semantics remain unsupported.
+
+---
+
+## ISSUE-027 — Computed getter body extraction can regress silently because it relies on narrow source-resolved helper semantics
+
+- Status: `PARTIALLY MITIGATED`
+- Area: getter body analysis / source-resolved entity helper semantics
+- Found during: implementation of computed getter body extraction after fake computed path suppression
+- Summary:
+  The analyzer now recovers backing entity property reads from simple computed getters, but this support relies on a
+  deliberately narrow body walker over source-resolved zero-arg same-entity methods.
+- Covered shapes:
+  - `return getCode();`
+  - `return getCode() + " - " + getName();`
+  - `return SomeEnum.fromCode(getCode());`
+  - local variable rebinding such as `String code = getCode(); return code;`
+  - direct field access such as `return code + " - " + name;`
+  - recursion-guarded chaining across same-entity zero-arg computed getters.
+- Risk:
+  Future changes may accidentally reintroduce fake computed paths, lose recovered backing reads, or break recursion guards.
+- Mitigation so far:
+  Added focused regression coverage in `AstPathEngineComputedGetterTest` for:
+  - metadata-backed getter;
+  - computed getter wrapper around persistent getter;
+  - instance-name style concatenation;
+  - local-variable rebinding;
+  - direct field access;
+  - recursion guard.
+- Remaining limitation:
+  Complex branching, service/repository calls, localization helpers, and arbitrary helper graphs remain outside this support scope.
