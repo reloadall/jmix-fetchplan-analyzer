@@ -1,3 +1,27 @@
+(Additive report-layer decision)
+
+## Decision — Declared fetch plan paths are not treated as ground truth in report interpretation
+
+Context:
+- fetch plans are manually authored;
+- manual fetch plans may contain overfetch;
+- unsupported analysis zones may prevent static confirmation of a declared path.
+
+Decision:
+- keep current raw comparison concepts (`Covered`, `Missing`, `Extra`, `Uncertain`) for backward compatibility;
+- interpret leaf declared paths not matched by analysis as **declared but not statically confirmed** rather than automatic analyzer defect;
+- add a derived report-layer breakdown for declared-not-confirmed paths:
+  - declared under uncertainty;
+  - possible analyzer gap;
+  - probable overfetch;
+  - structural/container declared paths.
+- ignore standard Jmix/system leaf fields in fetch-plan comparison (`id`, version/audit/delete timestamps/users)
+  so they do not inflate covered/missing/extra interpretation.
+
+Rationale:
+- improves report readability without changing extraction semantics;
+- avoids overstating analyzer certainty;
+- better matches the real workflow where fetch plans may be broader than true runtime need.
 # Decisions
 
 This file records important design decisions for future development.

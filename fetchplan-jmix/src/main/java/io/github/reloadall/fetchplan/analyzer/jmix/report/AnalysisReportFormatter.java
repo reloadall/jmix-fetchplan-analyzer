@@ -34,8 +34,17 @@ public class AnalysisReportFormatter {
         appendSection(sb, "Missing", report.getComparisonResult().getMissingPaths());
         appendSection(sb, "Extra", report.getComparisonResult().getExtraPaths());
         appendSection(sb, "Uncertain", report.getComparisonResult().getUncertainPaths());
+        appendDeclaredBreakdown(sb, report.getComparisonResult().getDeclaredPathBreakdown());
 
         return sb.toString();
+    }
+
+    private void appendDeclaredBreakdown(StringBuilder sb, io.github.reloadall.fetchplan.analyzer.jmix.compare.DeclaredPathBreakdown breakdown) {
+        sb.append("Declared not confirmed breakdown:\n");
+        appendSection(sb, "  Declared under uncertainty", breakdown.getDeclaredUnderUncertainty());
+        appendSection(sb, "  Possible analyzer gap", breakdown.getPossibleAnalyzerGap());
+        appendSection(sb, "  Probable overfetch", breakdown.getProbableOverfetch());
+        appendSection(sb, "  Structural/container paths", breakdown.getStructuralContainerPaths());
     }
 
     private void appendSection(StringBuilder sb, String title, Set<String> values) {

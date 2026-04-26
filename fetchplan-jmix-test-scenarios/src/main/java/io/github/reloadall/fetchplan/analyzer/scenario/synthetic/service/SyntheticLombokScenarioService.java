@@ -18,6 +18,7 @@ public class SyntheticLombokScenarioService {
     private final GroupInfoFinder groupInfoFinder;
     private final AgreementFinder agreementFinder;
     private final LineTypeGuard lineTypeGuard;
+    private final RouteCodeReader routeCodeReader;
 
     public void inspectDocumentWithLombokServiceCall(RootDocument document) {
         ScenarioLog log = new ScenarioLog();
@@ -89,6 +90,19 @@ public class SyntheticLombokScenarioService {
     public void inspectLineWithBooleanHelperBody(BaseLine line) {
         if (lineTypeGuard.isNotInAllowedKind(line, List.of(SpecificLine.class))) {
             return;
+        }
+    }
+
+    public void inspectDocumentWithNestedValueCallArgument(RootDocument document) {
+        ScenarioLog log = new ScenarioLog();
+
+        String code = routeCodeReader.readCode(
+                routeInfoFinder.findRouteInfo(document, log),
+                log
+        );
+
+        if (code != null) {
+            code.length();
         }
     }
 }

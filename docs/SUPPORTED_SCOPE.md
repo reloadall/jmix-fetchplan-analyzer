@@ -62,6 +62,15 @@ The tool should be treated as a **best-effort static analyzer**:
 - `Extra` is useful but still context-dependent
 - `Uncertain` means the tool encountered unsupported or partial analysis zones
 
+Report interpretation note:
+- declared fetch plan paths are manual input, not mathematical ground truth;
+- `Missing` / declared-not-confirmed paths must be interpreted as
+  **"declared but not statically confirmed"**, not as automatic analyzer failure;
+- when uncertainty overlaps a declared path, that path should be reviewed as uncertainty first,
+  not as clear overfetch.
+- default/system fields are ignored for fetch-plan comparison when they are declared as leaf paths;
+- in particular, `id` is not treated as a required fetch-plan coverage path.
+
 ## Recommended usage model
 
 Use it as:

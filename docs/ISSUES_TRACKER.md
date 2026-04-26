@@ -564,3 +564,84 @@ Status values used below:
 - Important non-expansion note:
   This does **not** make helper methods subtype-narrowing primitives.
   It only preserves entity-path reads performed inside boolean helper bodies used in conditions.
+
+---
+
+## ISSUE-023 — Nested value-call argument interproc continuation was not preserved through inline argument binding
+
+- Status: `RESOLVED`
+- Area: interprocedural argument binding / condition terminal policy / synthetic scenario coverage
+- Found during: addition of nested synthetic value-call argument scenario
+- Summary:
+  An inline nested interprocedural call used as an argument to another interprocedural call could be resolved, but
+  downstream leaf access was not consistently preserved in final canonical output.
+- Evidence:
+  New synthetic scenario
+  `SyntheticLombokScenarioService.inspectDocumentWithNestedValueCallArgument(RootDocument document)`
+  initially expected:
+  - `detail.parentDetail.document.routeInfo.code`
+  but first produced `[]`, and after an intermediate condition-marking change produced noisy parent/container paths such as
+  `detail` and `detail.parentDetail.document.routeInfo` in unrelated scenario outputs.
+- Root cause:
+  Two interacting issues were exposed:
+  1. nested interproc argument resolution depended on condition-expression handling to preserve terminal leaf usage through
+     scalar/null guards around the returned inline value;
+  2. a too-broad condition-marking fallback started marking non-scalar entity anchor names in binary conditions, which
+     reintroduced structural parent noise in existing scenario outputs.
+- Resolution:
+  Added focused synthetic coverage for the inline nested value-call argument pattern and tightened `IfStatementHandler`
+  so binary-condition fallback marks only scalar-like name operands (e.g. `String`, primitive/wrapper, `CharSequence`) as
+  terminal when direct expression resolution is empty.
+  This preserves leaf reads like `routeInfo.getCode()` behind `if (code != null)` without reintroducing structural
+  container paths for entity references such as `routeInfo != null` or `agreement != null`.
+- Verified result:
+  The nested synthetic scenario now produces canonical path:
+  - `detail.parentDetail.document.routeInfo.code`
+  and previously green scenario/document regression tests remain green.
+
+---
+
+## ISSUE-024 — Raw report semantics can overstate declared-only paths as analyzer failures because manual fetch plans may contain overfetch
+
+- Status: `PARTIALLY MITIGATED`
+- Area: comparison/report interpretation
+- Found during: review of real anonymized report with high declared-only surface and large uncertainty
+- Summary:
+  A plain `Covered / Missing / Extra / Uncertain` view is not expressive enough when declared fetch plans are manually
+  authored and may intentionally or accidentally contain overfetch.
+- Why this matters:
+  Users may misread declared-but-not-confirmed leaf paths as definite analyzer bugs, even when they are:
+  - under uncertainty;
+  - likely overfetch;
+  - or only weakly suggestive of a possible analyzer gap.
+- Mitigation so far:
+  Added a derived report-layer breakdown for declared-not-confirmed paths:
+  - `Declared under uncertainty`
+  - `Possible analyzer gap`
+  - `Probable overfetch`
+  - `Structural/container paths`
+- Important note:
+  This is a readability/interpretation improvement only.
+  Core extraction and comparison semantics remain unchanged.
+
+---
+
+## ISSUE-025 — Default/system fields such as `id` can create misleading comparison noise in declared-only and analyzed-only path sets
+
+- Status: `RESOLVED`
+- Area: comparison/report interpretation
+- Found during: review of real fetch-plan reports where `.id` leaf paths appeared as declared-not-confirmed noise
+- Summary:
+  Jmix default/system fields like `id` should not be treated as meaningful fetch-plan coverage requirements, but they can
+  otherwise appear in `Missing`, `Extra`, or derived declared-not-confirmed groups.
+- Resolution:
+  Added comparison-layer filtering for standard system leaf fields:
+  - `id`
+  - `version`
+  - `createTs`
+  - `createdBy`
+  - `updateTs`
+  - `updatedBy`
+  - `deleteTs`
+  - `deletedBy`
+  Filtering applies to leaf system-field paths only and does not remove parent/container entity paths.
