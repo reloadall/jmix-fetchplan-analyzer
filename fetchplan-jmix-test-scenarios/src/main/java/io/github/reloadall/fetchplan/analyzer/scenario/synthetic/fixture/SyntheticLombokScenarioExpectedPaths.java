@@ -30,6 +30,10 @@ public final class SyntheticLombokScenarioExpectedPaths {
             "parent.metaName"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_NESTED_VALUE_CALL_ARGUMENT = Set.of(
+            "detail.parentDetail.document.routeInfo.code"
+    );
+
     private SyntheticLombokScenarioExpectedPaths() {
     }
 }

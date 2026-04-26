@@ -35,6 +35,7 @@ the tool produces:
     - Missing
     - Extra
     - Uncertain
+    - Declared not confirmed breakdown
 
 ## Current capabilities
 
@@ -70,8 +71,20 @@ See `docs/SUPPORTED_SCOPE.md` for details and limitations.
 
 - **Covered** — analyzed paths already covered by fetch plan
 - **Missing** — analyzed paths missing in fetch plan
-- **Extra** — declared leaf fetch plan paths that are not used
+- **Extra** — declared leaf fetch plan paths that are not statically confirmed as used
 - **Uncertain** — paths affected by unsupported or partially supported patterns
+
+Interpretation note:
+
+- fetch plans are manual input and are **not** treated as ground truth;
+- declared-only paths should be read as **declared but not statically confirmed**, not automatically as analyzer defects;
+- the report layer now adds a derived breakdown for declared-not-confirmed paths:
+  - declared under uncertainty;
+  - possible analyzer gap;
+  - probable overfetch;
+  - structural/container paths.
+- standard Jmix/system leaf fields such as `id` are ignored for fetch-plan comparison and do not count as required
+  fetch-plan coverage.
 
 ## High-level pipeline
 
@@ -108,6 +121,8 @@ Current limitation:
 - the scenario currently stores fetch-plan expectations as a plain path-set fixture rather than a production-like Jmix `FetchPlan` object;
 - this keeps the scenario integration test small and avoids broad analyzer changes at this stage.
 - object-reference terminal usage without deeper property access still has an explicit open policy question; see `docs/ISSUES_TRACKER.md` (`ISSUE-013`).
+- report-layer interpretation now distinguishes between confirmed usage and declared-but-not-confirmed paths more explicitly;
+- comparison also ignores standard system/default leaf fields (for example `id`) so they do not produce misleading report noise.
 
 Current test status:
 

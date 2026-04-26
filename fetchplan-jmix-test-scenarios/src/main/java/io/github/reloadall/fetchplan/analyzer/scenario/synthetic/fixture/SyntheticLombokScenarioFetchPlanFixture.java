@@ -87,6 +87,18 @@ public final class SyntheticLombokScenarioFetchPlanFixture {
             "parent.metaName"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_NESTED_VALUE_CALL_ARGUMENT_ALL_PATHS = Set.of(
+            "detail",
+            "detail.parentDetail",
+            "detail.parentDetail.document",
+            "detail.parentDetail.document.routeInfo",
+            "detail.parentDetail.document.routeInfo.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_NESTED_VALUE_CALL_ARGUMENT_LEAF_PATHS = Set.of(
+            "detail.parentDetail.document.routeInfo.code"
+    );
+
     private SyntheticLombokScenarioFetchPlanFixture() {
     }
 }

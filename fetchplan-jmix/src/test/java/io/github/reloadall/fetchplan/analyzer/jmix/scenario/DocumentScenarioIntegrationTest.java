@@ -259,6 +259,19 @@ class DocumentScenarioIntegrationTest {
         );
     }
 
+    @Test
+    void analyzesNestedValueCallArgumentScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithNestedValueCallArgument",
+                SyntheticLombokScenarioService.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_NESTED_VALUE_CALL_ARGUMENT,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_NESTED_VALUE_CALL_ARGUMENT_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_NESTED_VALUE_CALL_ARGUMENT_LEAF_PATHS
+        );
+    }
+
     private void assertScenario(String methodName,
                                 Set<String> expectedPaths,
                                 Set<String> allFetchPlanPaths,
