@@ -78,6 +78,15 @@ public final class SyntheticLombokScenarioFetchPlanFixture {
             "header.agreement.sides.counterparty.name"
     );
 
+    public static final Set<String> INSPECT_LINE_WITH_BOOLEAN_HELPER_BODY_ALL_PATHS = Set.of(
+            "parent",
+            "parent.metaName"
+    );
+
+    public static final Set<String> INSPECT_LINE_WITH_BOOLEAN_HELPER_BODY_LEAF_PATHS = Set.of(
+            "parent.metaName"
+    );
+
     private SyntheticLombokScenarioFetchPlanFixture() {
     }
 }

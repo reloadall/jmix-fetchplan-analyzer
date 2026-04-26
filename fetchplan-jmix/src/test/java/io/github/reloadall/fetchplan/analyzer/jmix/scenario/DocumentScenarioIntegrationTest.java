@@ -246,6 +246,19 @@ class DocumentScenarioIntegrationTest {
         );
     }
 
+    @Test
+    void analyzesBooleanHelperBodyScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectLineWithBooleanHelperBody",
+                SyntheticLombokScenarioService.class,
+                "line",
+                BaseLine.class,
+                SyntheticLombokScenarioExpectedPaths.INSPECT_LINE_WITH_BOOLEAN_HELPER_BODY,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_LINE_WITH_BOOLEAN_HELPER_BODY_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.INSPECT_LINE_WITH_BOOLEAN_HELPER_BODY_LEAF_PATHS
+        );
+    }
+
     private void assertScenario(String methodName,
                                 Set<String> expectedPaths,
                                 Set<String> allFetchPlanPaths,

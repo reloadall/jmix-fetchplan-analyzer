@@ -10,7 +10,10 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.Continuation;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementHandleResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementsPayload;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
+import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
+import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +32,8 @@ public class IfStatementHandler implements StatementHandler {
                                         Statement statement,
                                         EngineContext context) {
         IfStmt ifStmt = statement.asIfStmt();
+        markConditionUsage(rawTree, step, ifStmt, context);
+
         StatementsPayload currentPayload = (StatementsPayload) step.getPayload();
 
         StatementsPayload afterIfPayload = currentPayload.next();
@@ -62,6 +67,22 @@ public class IfStatementHandler implements StatementHandler {
         }
 
         return StatementHandleResult.customContinuations(continuations);
+    }
+
+    private void markConditionUsage(RawTree rawTree,
+                                    AnalysisStep step,
+                                    IfStmt ifStmt,
+                                    EngineContext context) {
+        ExpressionResolutionResult conditionResult = context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                ifStmt.getCondition(),
+                context
+        );
+
+        for (RawNode node : conditionResult.getNodes()) {
+            node.setUsageKind(UsageKind.TERMINAL);
+        }
     }
 
     private List<Statement> asStatements(Statement statement) {

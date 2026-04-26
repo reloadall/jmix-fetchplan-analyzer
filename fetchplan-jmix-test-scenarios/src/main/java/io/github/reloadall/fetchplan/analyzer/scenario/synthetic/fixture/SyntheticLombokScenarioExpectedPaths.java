@@ -26,6 +26,10 @@ public final class SyntheticLombokScenarioExpectedPaths {
             "header.agreement.sides.counterparty.name"
     );
 
+    public static final Set<String> INSPECT_LINE_WITH_BOOLEAN_HELPER_BODY = Set.of(
+            "parent.metaName"
+    );
+
     private SyntheticLombokScenarioExpectedPaths() {
     }
 }
