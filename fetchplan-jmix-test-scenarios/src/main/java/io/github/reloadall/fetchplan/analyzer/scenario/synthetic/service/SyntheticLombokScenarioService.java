@@ -1,5 +1,6 @@
 package io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service;
 
+import java.util.List;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RootDocument;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RouteInfo;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.ScenarioLog;
@@ -83,5 +84,11 @@ public class SyntheticLombokScenarioService {
                 .getSides()
                 .getCounterparty()
                 .getName();
+    }
+
+    public void inspectLineWithBooleanHelperBody(BaseLine line) {
+        if (lineTypeGuard.isNotInAllowedKind(line, List.of(SpecificLine.class))) {
+            return;
+        }
     }
 }

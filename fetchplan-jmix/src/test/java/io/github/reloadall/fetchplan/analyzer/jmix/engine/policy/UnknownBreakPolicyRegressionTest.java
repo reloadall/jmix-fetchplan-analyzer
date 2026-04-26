@@ -95,6 +95,17 @@ class UnknownBreakPolicyRegressionTest {
         assertEquals(Set.of("<root>"), outcome.uncertainPaths());
     }
 
+    @Test
+    void harmlessBooleanConditionWithoutEntityPathShouldNotCreateUnknownBreak() {
+        AnalysisOutcome outcome = analyzeParsedMethod(
+                "void sample(Document document) { if (true) { return; } }",
+                "document"
+        );
+
+        assertEquals(Set.of(), outcome.analyzedPaths());
+        assertEquals(Set.of(), outcome.uncertainPaths());
+    }
+
     private AnalysisOutcome analyzeParsedMethod(String methodSource, String rootParamName) {
         InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
         when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(java.util.Optional.empty());

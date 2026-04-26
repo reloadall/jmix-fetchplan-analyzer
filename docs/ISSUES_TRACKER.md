@@ -529,3 +529,38 @@ Status values used below:
   Added a second focused scenario for negative helper guard + early return + explicit cast:
   `SyntheticLombokScenarioService.inspectLineWithNegativeTypeGuardAndCast(BaseLine line)`.
   The supported signal remains the explicit cast after the guard rather than the helper method itself.
+
+---
+
+## ISSUE-022 — Boolean helper body path extraction in conditions required explicit interproc return-walk support for control-flow and non-return boolean expressions
+
+- Status: `RESOLVED`
+- Area: interprocedural helper-body extraction / condition analysis / return resolver
+- Found during: addition of synthetic boolean-helper-body scenario
+- Summary:
+  A boolean helper used in an `if` condition was entered interprocedurally, but entity paths read inside the helper body
+  were not preserved unless they directly participated in a simple returned path node.
+- Evidence:
+  New synthetic scenario
+  `SyntheticLombokScenarioService.inspectLineWithBooleanHelperBody(BaseLine line)`
+  initially expected `parent.metaName` but produced `[]`.
+  Trace showed that analysis entered:
+  - `LineTypeGuard.isNotInAllowedKind(BaseLine, List<Class<?>>)`
+  - nested `LineTypeGuard.isKind(Class<?>, HasSyntheticMeta)`
+  - `document.getMetaName()`
+  but returned no analyzed terminal path because:
+  - condition expressions inside `if` were not walked by `InterprocReturnResolver`;
+  - `foreach` bodies inside the helper were not traversed there;
+  - boolean return expressions such as `return actualKind != null;` did not mark helper-body reads as terminal usage.
+- Resolution:
+  Added the smallest targeted support in `InterprocReturnResolver` for:
+  - evaluating `if` conditions during interproc return walking;
+  - traversing `foreach` iterable/body during interproc return walking;
+  - evaluating binary return expressions and marking participating resolved nodes as terminal.
+  Also updated `IfStatementHandler` to resolve condition expressions in the main engine flow.
+- Verified result:
+  The boolean-helper-body synthetic scenario now produces canonical path:
+  - `parent.metaName`
+- Important non-expansion note:
+  This does **not** make helper methods subtype-narrowing primitives.
+  It only preserves entity-path reads performed inside boolean helper bodies used in conditions.

@@ -8,9 +8,11 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.Statement;
@@ -99,6 +101,13 @@ public class InterprocReturnResolver {
                 continue;
             }
 
+            if (statement.isForEachStmt()) {
+                merged = merged.merge(
+                        handleForEachStatement(rawTree, step, statement.asForEachStmt(), context)
+                );
+                continue;
+            }
+
             if (statement.isBlockStmt()) {
                 AnalysisStep nestedStep = copyStep(step);
                 merged = merged.merge(
@@ -171,6 +180,10 @@ public class InterprocReturnResolver {
             return ExpressionResolutionResult.empty();
         }
 
+        if (expression.isBinaryExpr()) {
+            return handleBinaryReturnExpression(rawTree, step, expression.asBinaryExpr(), context);
+        }
+
         ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
@@ -186,10 +199,40 @@ public class InterprocReturnResolver {
         return result;
     }
 
+    private ExpressionResolutionResult handleBinaryReturnExpression(RawTree rawTree,
+                                                                    AnalysisStep step,
+                                                                    BinaryExpr binaryExpr,
+                                                                    EngineContext context) {
+        ExpressionResolutionResult leftResult = context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                binaryExpr.getLeft(),
+                context
+        );
+        markTerminal(leftResult);
+
+        ExpressionResolutionResult rightResult = context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                binaryExpr.getRight(),
+                context
+        );
+        markTerminal(rightResult);
+
+        return leftResult.merge(rightResult);
+    }
+
     private ExpressionResolutionResult handleIfStatement(RawTree rawTree,
                                                          AnalysisStep step,
                                                          IfStmt ifStmt,
                                                          EngineContext context) {
+        context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                ifStmt.getCondition(),
+                context
+        );
+
         AnalysisStep thenStep = copyStep(step);
         ExpressionResolutionResult thenResult = collectFromStatement(
                 rawTree,
@@ -210,6 +253,21 @@ public class InterprocReturnResolver {
         }
 
         return thenResult.merge(elseResult);
+    }
+
+    private ExpressionResolutionResult handleForEachStatement(RawTree rawTree,
+                                                              AnalysisStep step,
+                                                              ForEachStmt forEachStmt,
+                                                              EngineContext context) {
+        context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                forEachStmt.getIterable(),
+                context
+        );
+
+        AnalysisStep bodyStep = copyStep(step);
+        return collectFromStatement(rawTree, bodyStep, forEachStmt.getBody(), context);
     }
 
     private ExpressionResolutionResult collectFromStatement(RawTree rawTree,
@@ -278,5 +336,11 @@ public class InterprocReturnResolver {
         }
 
         return true;
+    }
+
+    private void markTerminal(ExpressionResolutionResult result) {
+        for (RawNode node : result.getNodes()) {
+            node.setUsageKind(UsageKind.TERMINAL);
+        }
     }
 }
