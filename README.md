@@ -42,6 +42,8 @@ the tool produces:
 The current pilot supports:
 
 - linear getter chains
+- metadata-backed entity getters
+- simple computed entity getter body extraction without emitting fake computed fetch-plan properties
 - `if / else`
 - `foreach`
 - `list.get(0)` as collection element access
@@ -85,6 +87,8 @@ Interpretation note:
   - structural/container paths.
 - standard Jmix/system leaf fields such as `id` are ignored for fetch-plan comparison and do not count as required
   fetch-plan coverage.
+- computed/business getter names themselves are not treated as fetch-plan properties unless metadata-backed;
+  simple zero-arg same-entity computed getters may still contribute real backing property reads.
 
 ## High-level pipeline
 
@@ -115,6 +119,8 @@ The repository includes `fetchplan-jmix-test-scenarios`, a dedicated source-fixt
 - The current document-oriented scenario now includes one baseline root flow plus multiple focused root methods for isolated analyzer capabilities.
 - The baseline root remains `DocumentScenarioService.inspectDocument(Document document)`.
 - Additional focused roots cover branch flow, collection `get(0)`, explicit `this` call, value-call assignment, local alias rebinding, alias chain, cast-based continuation, narrow chained `stream().map(MethodRef)`, and one uncertainty case.
+- Focused engine regression coverage also includes computed getter handling: fake computed paths are suppressed, while simple
+  computed getter bodies can recover real backing property reads such as `getCodeAsEnum() -> code`.
 
 Current limitation:
 

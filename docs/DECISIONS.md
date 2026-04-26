@@ -131,3 +131,38 @@ Consequence:
 - `Covered` should not be inflated by those parent/container paths;
 - non-leaf declared container paths should not surface as missing when deeper analyzed descendants exist;
 - leaf/path-level strictness remains at the declared leaf level.
+
+---
+
+## D-008 Getter-like method calls become canonical paths only for metadata-backed entity properties
+
+Getter naming alone is not sufficient evidence that a method represents a real fetch-plan property.
+
+Reason:
+- entity classes may expose computed/business getters such as conversion helpers;
+- paths like `codeAsEnum` or `nameAsEnum` are false fetch-plan properties when no metadata-backed field/property exists;
+- adding such paths creates report noise in `Missing`, `Extra`, and derived breakdown sections.
+
+Consequence:
+- `getX()` / `isX()` on entity-like classes should emit canonical segment `x` only when `x` is backed by a real entity field/property;
+- computed/business getters without backing metadata must be ignored as fetch-plan path segments;
+- when a getter-like entity method is not metadata-backed, analyzer should prefer best-effort body inspection to recover
+  real backing persistent reads rather than emitting a fake computed path;
+- body inspection must remain narrow, recursion-guarded, and limited to safe same-entity source-resolved cases.
+
+---
+
+## D-009 Computed getter body extraction is allowed only as a conservative same-entity backing-read recovery step
+
+Computed/business getters may be useful not as fetch-plan properties themselves, but as wrappers around real entity reads.
+
+Reason:
+- domain entities often expose convenience methods like `getCodeAsEnum()` or `getInstanceName()`;
+- dropping those calls entirely can hide real persistent reads used inside them;
+- emitting the computed getter name itself is incorrect for fetch-plan comparison.
+
+Consequence:
+- analyzer may inspect simple zero-arg computed getter bodies declared on the same entity class;
+- extracted output must consist only of real metadata-backed properties found inside the body;
+- recursion/depth guards are required so chained computed getters do not loop forever;
+- service calls, repository reloads, and broader side-effect analysis remain out of scope.
