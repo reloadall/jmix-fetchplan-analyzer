@@ -3,6 +3,8 @@ package io.github.reloadall.fetchplan.analyzer.jmix.engine.statement;
 import java.util.List;
 
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
@@ -10,6 +12,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.Continuation;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementHandleResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.StatementsPayload;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolutionResult;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.UnknownBreakPolicy;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
@@ -56,6 +59,12 @@ public class ReturnStatementHandler implements StatementHandler {
                 context
         );
 
+        boolean boundaryArgumentUsage = false;
+        if (result.isEmpty()) {
+            result = collectBoundaryArgumentUsages(rawTree, step, expression, context);
+            boundaryArgumentUsage = !result.isEmpty();
+        }
+
         if (result.isEmpty() && unknownBreakPolicy.shouldCreateForReturnFailure(expression)) {
             RawNode breakNode = rawTree.addUnknownBreak(
                     step.getCurrentRawNode(),
@@ -66,13 +75,71 @@ public class ReturnStatementHandler implements StatementHandler {
             return returnToCallerIfNeeded(step);
         }
 
-        if (!returnsToCaller) {
+        if (!returnsToCaller || boundaryArgumentUsage) {
             for (RawNode node : result.getNodes()) {
                 node.setUsageKind(UsageKind.TERMINAL);
             }
         }
 
         return returnToCallerIfNeeded(step);
+    }
+
+    private ExpressionResolutionResult collectBoundaryArgumentUsages(RawTree rawTree,
+                                                                    AnalysisStep step,
+                                                                    Expression expression,
+                                                                    EngineContext context) {
+        if (expression == null) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        if (expression.isNameExpr()) {
+            ValueBinding binding = step.getBinding(expression.asNameExpr().getNameAsString());
+            if (binding != null && binding.isTerminalOnly() && !binding.isEmpty()) {
+                return new ExpressionResolutionResult(binding.getNodes(), binding.isUncertain());
+            }
+        }
+
+        if (expression.isMethodCallExpr()) {
+            MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
+            ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+            for (Expression argument : methodCallExpr.getArguments()) {
+                ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
+                        rawTree,
+                        step,
+                        argument,
+                        context
+                );
+
+                if (argumentResult.isEmpty()) {
+                    argumentResult = collectBoundaryArgumentUsages(rawTree, step, argument, context);
+                }
+
+                merged = merged.merge(argumentResult);
+            }
+            return merged;
+        }
+
+        if (expression.isObjectCreationExpr()) {
+            ObjectCreationExpr objectCreationExpr = expression.asObjectCreationExpr();
+            ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+            for (Expression argument : objectCreationExpr.getArguments()) {
+                ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
+                        rawTree,
+                        step,
+                        argument,
+                        context
+                );
+
+                if (argumentResult.isEmpty()) {
+                    argumentResult = collectBoundaryArgumentUsages(rawTree, step, argument, context);
+                }
+
+                merged = merged.merge(argumentResult);
+            }
+            return merged;
+        }
+
+        return ExpressionResolutionResult.empty();
     }
 
     private boolean returnsToCaller(AnalysisStep step) {

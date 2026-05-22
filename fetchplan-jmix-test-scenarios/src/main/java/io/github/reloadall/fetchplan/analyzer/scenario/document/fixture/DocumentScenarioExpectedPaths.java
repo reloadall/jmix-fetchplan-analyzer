@@ -64,6 +64,20 @@ public final class DocumentScenarioExpectedPaths {
             "contract.customer.name"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_GETTER_ARGUMENTS = Set.of(
+            "dateStart",
+            "dateFinish",
+            "contract",
+            "currency"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_FORWARDED_REPOSITORY_ARGUMENTS = Set.of(
+            "dateStart",
+            "dateFinish",
+            "contract",
+            "currency"
+    );
+
     private DocumentScenarioExpectedPaths() {
     }
 }

@@ -45,10 +45,18 @@ import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioExpectedPaths;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.fixture.DocumentScenarioFetchPlanFixture;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentScenarioService;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.RecordRepository;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.BaseLine;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.RootDocument;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.entity.SyntheticCalculation;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture.SyntheticLombokScenarioExpectedPaths;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.fixture.SyntheticLombokScenarioFetchPlanFixture;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticCalculationConverter;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticGrandchildConverter;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticConcreteConverterA;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticConcreteConverterB;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticGenericConverter;
+import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticDocumentConverter;
 import io.github.reloadall.fetchplan.analyzer.scenario.synthetic.service.SyntheticLombokScenarioService;
 import org.junit.jupiter.api.Test;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.DocumentWorker;
@@ -182,6 +190,40 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesGetterArgumentsScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithGetterArguments",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_GETTER_ARGUMENTS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_GETTER_ARGUMENTS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_GETTER_ARGUMENTS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesForwardedRepositoryArgumentsScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithForwardedRepositoryArguments",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_FORWARDED_REPOSITORY_ARGUMENTS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_FORWARDED_REPOSITORY_ARGUMENTS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_FORWARDED_REPOSITORY_ARGUMENTS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void interprocResolvedCallsDoNotLeakStructuralArgumentParentsIntoCanonicalOutput() {
+        ScenarioResult result = analyzeScenario(
+                "inspectDocument",
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_LEAF_PATHS
+        );
+
+        assertEquals(DocumentScenarioExpectedPaths.INSPECT_DOCUMENT, result.analyzedPaths(), result.trace());
+        assertEquals(Set.of(), result.comparisonResult().getMissingPaths(), result.trace());
+        assertEquals(Set.of(), result.comparisonResult().getExtraPaths(), result.trace());
+        assertEquals(Set.of(), result.comparisonResult().getUncertainPaths(), result.trace());
+    }
+
+    @Test
     void analyzesLombokSingleBeanScenarioAndMatchesFixturePaths() {
         assertScenario(
                 "inspectDocumentWithLombokServiceCall",
@@ -191,6 +233,84 @@ class DocumentScenarioIntegrationTest {
                 SyntheticLombokScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL,
                 SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_ALL_PATHS,
                 SyntheticLombokScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesInheritedProtectedConverterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "createDto",
+                SyntheticDocumentConverter.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.CREATE_DTO_WITH_INHERITED_PROTECTED_METHOD,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_INHERITED_PROTECTED_METHOD_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_INHERITED_PROTECTED_METHOD_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesGrandparentInheritedProtectedConverterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "createDto",
+                SyntheticGrandchildConverter.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.CREATE_DTO_WITH_GRANDPARENT_INHERITED_PROTECTED_METHOD,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_GRANDPARENT_INHERITED_PROTECTED_METHOD_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_GRANDPARENT_INHERITED_PROTECTED_METHOD_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesGenericInheritedProtectedConverterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "createDto",
+                SyntheticGenericConverter.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.CREATE_DTO_WITH_GENERIC_INHERITED_PROTECTED_METHOD,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_GENERIC_INHERITED_PROTECTED_METHOD_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_GENERIC_INHERITED_PROTECTED_METHOD_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesSiblingBaseConverterABranchAndMatchesFixturePaths() {
+        assertScenario(
+                "createDto",
+                SyntheticConcreteConverterA.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_A,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_A_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_A_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesSiblingBaseConverterBBranchAndMatchesFixturePaths() {
+        assertScenario(
+                "createDto",
+                SyntheticConcreteConverterB.class,
+                "document",
+                RootDocument.class,
+                SyntheticLombokScenarioExpectedPaths.CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_B,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_B_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_B_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesBaseParameterAndPrivateHelperScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "createDto",
+                SyntheticCalculationConverter.class,
+                "line",
+                SyntheticCalculation.class,
+                SyntheticLombokScenarioExpectedPaths.CREATE_DTO_WITH_BASE_PARAMETER_AND_PRIVATE_HELPER,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_BASE_PARAMETER_AND_PRIVATE_HELPER_ALL_PATHS,
+                SyntheticLombokScenarioFetchPlanFixture.CREATE_DTO_WITH_BASE_PARAMETER_AND_PRIVATE_HELPER_LEAF_PATHS
         );
     }
 

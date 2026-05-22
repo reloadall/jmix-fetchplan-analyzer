@@ -22,6 +22,16 @@ public class ReturnRebindingFixtureService {
         address.getCity();
     }
 
+    public void valueCallReturnRebindingShouldNotUseSideEffectsAsReturnedValue(Document document) {
+        Address address = helperWithSideEffectOnly(document);
+        address.getCity();
+    }
+
+    public void valueCallReturnRebindingShouldUseActualReturnedValue(Document document) {
+        Address address = helperReturningShippingAddress(document);
+        address.getCity();
+    }
+
     public void castContinuation(Document document) {
         Object address = document.getShippingAddress();
         Address castedAddress = (Address) address;
@@ -34,5 +44,14 @@ public class ReturnRebindingFixtureService {
 
     Address loadShippingAddress(Document document) {
         return resolveShippingAddress(document);
+    }
+
+    Address helperWithSideEffectOnly(Document document) {
+        document.getType().getCode();
+        return null;
+    }
+
+    Address helperReturningShippingAddress(Document document) {
+        return document.getShippingAddress();
     }
 }

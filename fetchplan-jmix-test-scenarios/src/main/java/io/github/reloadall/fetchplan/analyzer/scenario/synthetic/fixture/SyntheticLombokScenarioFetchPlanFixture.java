@@ -4,6 +4,70 @@ import java.util.Set;
 
 public final class SyntheticLombokScenarioFetchPlanFixture {
 
+    public static final Set<String> CREATE_DTO_WITH_INHERITED_PROTECTED_METHOD_ALL_PATHS = Set.of(
+            "agreement",
+            "agreement.sides",
+            "agreement.sides.counterparty",
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_INHERITED_PROTECTED_METHOD_LEAF_PATHS = Set.of(
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_GRANDPARENT_INHERITED_PROTECTED_METHOD_ALL_PATHS = Set.of(
+            "agreement",
+            "agreement.sides",
+            "agreement.sides.counterparty",
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_GRANDPARENT_INHERITED_PROTECTED_METHOD_LEAF_PATHS = Set.of(
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_GENERIC_INHERITED_PROTECTED_METHOD_ALL_PATHS = Set.of(
+            "agreement",
+            "agreement.sides",
+            "agreement.sides.counterparty",
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_GENERIC_INHERITED_PROTECTED_METHOD_LEAF_PATHS = Set.of(
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_A_ALL_PATHS = Set.of(
+            "agreement",
+            "agreement.sides",
+            "agreement.sides.counterparty",
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_A_LEAF_PATHS = Set.of(
+            "agreement.sides.counterparty.name"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_B_ALL_PATHS = Set.of(
+            "agreement",
+            "agreement.sides",
+            "agreement.sides.counterparty",
+            "agreement.sides.counterparty.code"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_SIBLING_BASE_CONVERTER_B_LEAF_PATHS = Set.of(
+            "agreement.sides.counterparty.code"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_BASE_PARAMETER_AND_PRIVATE_HELPER_ALL_PATHS = Set.of(
+            "parent",
+            "parent.lineBase"
+    );
+
+    public static final Set<String> CREATE_DTO_WITH_BASE_PARAMETER_AND_PRIVATE_HELPER_LEAF_PATHS = Set.of(
+            "parent.lineBase"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_LOMBOK_SERVICE_CALL_ALL_PATHS = Set.of(
             "detail",
             "detail.parentDetail",

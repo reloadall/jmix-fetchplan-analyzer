@@ -222,6 +222,11 @@ Status values used below:
 - Additional note:
   The cast-based continuation scenario currently does **not** emit the structural parent; it produces only
   `shippingAddress.city`, so the parent-path behavior remains scenario-specific rather than universal.
+- Follow-up resolution:
+  Terminal marking for getter/member path resolution was later tightened so getter-created raw nodes are
+  created as `INTERMEDIATE` by default and become `TERMINAL` only in the actual usage context
+  (expression statement / condition / return / other boundary handling). This prevents structural parent
+  leakage such as `type` alongside `type.code` for plain getter chains.
 
 ---
 
@@ -238,6 +243,22 @@ Status values used below:
   Keep the scenario small and stable; document this explicitly rather than broadening analyzer/test infrastructure in the same step.
 - Suggested next step:
   Introduce a production-like scenario fetch-plan fixture only when it can be done without broad refactoring or context startup.
+
+---
+
+## ISSUE-010A — Interprocedural return rebinding previously treated helper side effects as fallback return values
+
+- Status: `RESOLVED`
+- Area: `InterprocReturnResolver` / interprocedural return rebinding
+- Found during: Step 4 production hardening for return rebinding semantics
+- Summary:
+  `InterprocReturnResolver` previously fell back to helper-body `sideEffects` when `returnValues` were empty, which could incorrectly bind a caller variable to an internal field read performed inside the helper.
+- Why this matters:
+  A helper like `document.getType().getCode(); return null;` may legitimately record `type.code` as an internal usage, but that usage is not the returned object and must not become the caller-side binding for a value-call continuation.
+- Resolution:
+  Tightened return rebinding so value-call continuation uses only actual resolved return values. Helper-body `sideEffects` remain available as recorded usages inside the callee walk, but they are no longer treated as fallback returned objects/values. Added focused regression coverage for:
+  - negative case: side-effect-only helper plus `return null` must not produce fake rebinding such as `type.code.city`;
+  - positive case: actual returned `document.getShippingAddress()` still rebinds and yields `shippingAddress.city`.
 
 ---
 
@@ -705,3 +726,81 @@ Status values used below:
   - recursion guard.
 - Remaining limitation:
   Complex branching, service/repository calls, localization helpers, and arbitrary helper graphs remain outside this support scope.
+
+---
+
+## ISSUE-028 — Unqualified inherited protected converter-helper call was not resolved through abstract superclass method body
+
+- Status: `RESOLVED`
+- Area: interprocedural method resolution / inherited protected methods / synthetic converter hierarchy
+- Found during: addition of synthetic converter-hierarchy regression scenario
+- Summary:
+  An unqualified inherited protected call such as `createParams(document)` from a concrete subclass method did not enter
+  the abstract superclass method body, so analyzer output was empty and declared leaf paths fell under uncertainty.
+- Covered scenario:
+  `SyntheticDocumentConverter.createDto(RootDocument document)` extends `SyntheticBaseConverter<RootDocument>` and calls
+  inherited protected method `createParams(document)`, where `createParams(HasSyntheticDocument document)` is declared in
+  the abstract superclass and reads `agreement.sides.counterparty.name`.
+- Root cause:
+  `InterprocMethodResolver` previously searched only the concrete owning type for unqualified calls and did not walk the
+  superclass chain. After superclass resolution was added, scenario output still stayed empty because
+  `InterprocReturnResolver` preserved expression-statement path reads but did not merge them into the accumulated return-walk
+  result for helper-style methods returning DTO objects.
+- Resolution:
+  Added narrow superclass-chain lookup in `InterprocMethodResolver` for unqualified/owning-type calls, including same-file
+  abstract superclass declarations. Also updated `InterprocReturnResolver` so preserved expression-statement reads are merged
+  into collected interproc results, allowing DTO-producing helper bodies to contribute entity path usage even when the return
+  value itself is not a meaningful entity node.
+- Verified result:
+  The synthetic converter-hierarchy scenario now resolves and produces canonical path:
+  - `agreement.sides.counterparty.name`
+- Remaining limitation:
+  This is still not a broad Java inheritance model. Support remains intentionally narrow and best-effort:
+  no overload-heavy inheritance dispatch, no arbitrary abstract/proxy behavior, no reflection, and no generalized generic
+  substitution beyond what is needed for the covered scenario.
+
+---
+
+## ISSUE-029 — Pre-reload path reads inside private helper can collapse into deeper technical/system leaf instead of preserving the pre-boundary anchor path
+
+- Status: `RESOLVED`
+- Area: interprocedural return/body side-effect preservation / private helper path extraction / unsupported reload boundary
+- Found during: synthetic base-parameter + private-helper converter scenario
+- Summary:
+  In a converter-style private helper flow, the analyzer successfully resolves inherited base method, binds
+  `SyntheticCalculation -> BaseCalculation`, enters private helper `getTarget(calculation)`, and reaches the pre-reload
+  path `parent.lineBase`, but final canonical output can collapse to a deeper technical/system leaf such as
+  `parent.lineBase.id` instead of preserving the pre-boundary anchor `parent.lineBase`.
+- Evidence:
+  Synthetic scenario `SyntheticCalculationConverter.createDto(SyntheticCalculation line)` initially produced:
+  - actual: `parent.lineBase.id`
+  - expected: `parent.lineBase`
+  Trace showed:
+  - target method `createParams(BaseCalculation)` resolved;
+  - private helper `getTarget(BaseCalculation)` resolved;
+  - local bindings for `parent` and `lineBase` created;
+  - unsupported-reload-like helper path ultimately preserved `lineBase.getId()` as the observable terminal leaf.
+- Exact first stop point:
+  Not method resolution and not argument binding.
+  The first semantic divergence appears in return/body preservation around the unsupported-reload-like helper branch:
+  the analyzer keeps the deeper helper-body leaf (`id`) rather than the intended pre-reload anchor (`lineBase`).
+- Likely affected components:
+  - `InterprocReturnResolver`
+  - potentially path-terminal policy around helper-body side effects / unresolved return boundaries
+- Important note:
+  This is different from previously covered inherited-helper and generic-parameter scenarios.
+  The unresolved area is specifically the policy for preserving pre-boundary anchor paths before an unsupported reload-like step.
+- Resolution:
+  Added a narrow pre-boundary anchor preservation rule in `InterprocReturnResolver` for technical id access used only as
+  unsupported reload boundary preparation. When an expression statement resolves only a technical `.id` leaf from a real
+  entity anchor, analyzer now preserves the parent entity anchor node as the useful terminal path instead of exposing only
+  the technical leaf.
+- Verified result:
+  The synthetic converter scenario now produces canonical path:
+  - `parent.lineBase`
+  instead of:
+  - `parent.lineBase.id`
+- Important limitation note:
+  This is **not** repository reload support and does not implement `dataManager.load(...)`, `Id.of(...)`, or fetch-plan
+  builder semantics. It only preserves the last confirmed pre-boundary entity anchor before an unsupported reload/id
+  boundary.

@@ -12,19 +12,28 @@ public class ValueBinding {
     private final Set<RawNode> nodes;
     private final boolean uncertain;
     private final Set<String> dispatchTargetClassNames;
+    private final boolean terminalOnly;
 
     public ValueBinding(Set<RawNode> nodes, boolean uncertain) {
-        this(nodes, uncertain, Set.of());
+        this(nodes, uncertain, Set.of(), false);
     }
 
     public ValueBinding(Set<RawNode> nodes,
                         boolean uncertain,
                         Set<String> dispatchTargetClassNames) {
+        this(nodes, uncertain, dispatchTargetClassNames, false);
+    }
+
+    public ValueBinding(Set<RawNode> nodes,
+                        boolean uncertain,
+                        Set<String> dispatchTargetClassNames,
+                        boolean terminalOnly) {
         Objects.requireNonNull(nodes, "nodes is null");
         Objects.requireNonNull(dispatchTargetClassNames, "dispatchTargetClassNames is null");
         this.nodes = Collections.unmodifiableSet(new LinkedHashSet<>(nodes));
         this.uncertain = uncertain;
         this.dispatchTargetClassNames = Collections.unmodifiableSet(new LinkedHashSet<>(dispatchTargetClassNames));
+        this.terminalOnly = terminalOnly;
     }
 
     public static ValueBinding empty() {
@@ -49,6 +58,10 @@ public class ValueBinding {
         return new ValueBinding(result.getNodes(), result.isUncertain());
     }
 
+    public static ValueBinding terminalOnly(Set<RawNode> nodes, boolean uncertain) {
+        return new ValueBinding(nodes, uncertain, Set.of(), true);
+    }
+
     public static ValueBinding forDispatchTargets(Set<String> dispatchTargetClassNames, boolean uncertain) {
         return new ValueBinding(Set.of(), uncertain, dispatchTargetClassNames);
     }
@@ -67,6 +80,10 @@ public class ValueBinding {
 
     public boolean hasDispatchTargets() {
         return !dispatchTargetClassNames.isEmpty();
+    }
+
+    public boolean isTerminalOnly() {
+        return terminalOnly;
     }
 
     public boolean isEmpty() {
@@ -90,6 +107,11 @@ public class ValueBinding {
         Set<String> mergedDispatchTargets = new LinkedHashSet<>(this.dispatchTargetClassNames);
         mergedDispatchTargets.addAll(other.dispatchTargetClassNames);
 
-        return new ValueBinding(merged, this.uncertain || other.uncertain, mergedDispatchTargets);
+        return new ValueBinding(
+                merged,
+                this.uncertain || other.uncertain,
+                mergedDispatchTargets,
+                this.terminalOnly || other.terminalOnly
+        );
     }
 }

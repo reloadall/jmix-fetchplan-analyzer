@@ -20,6 +20,17 @@ import org.springframework.stereotype.Component;
 @Order(200)
 public class MethodCallExpressionHandler implements ExpressionHandler {
 
+    private static final Set<String> SYSTEM_FIELD_NAMES = Set.of(
+            "id",
+            "version",
+            "createTs",
+            "createdBy",
+            "updateTs",
+            "updatedBy",
+            "deleteTs",
+            "deletedBy"
+    );
+
     private final GetterPropertyAccessResolver getterPropertyAccessResolver;
 
     public MethodCallExpressionHandler() {
@@ -85,5 +96,9 @@ public class MethodCallExpressionHandler implements ExpressionHandler {
         }
 
         return new ExpressionResolutionResult(resultNodes, scopeResult.isUncertain());
+    }
+
+    private boolean isSystemField(String fieldName) {
+        return SYSTEM_FIELD_NAMES.contains(fieldName);
     }
 }

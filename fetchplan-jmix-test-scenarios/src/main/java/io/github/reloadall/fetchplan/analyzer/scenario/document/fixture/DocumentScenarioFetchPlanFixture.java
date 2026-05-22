@@ -143,6 +143,34 @@ public final class DocumentScenarioFetchPlanFixture {
             "contract.customer.name"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_GETTER_ARGUMENTS_ALL_PATHS = Set.of(
+            "dateStart",
+            "dateFinish",
+            "contract",
+            "currency"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_GETTER_ARGUMENTS_LEAF_PATHS = Set.of(
+            "dateStart",
+            "dateFinish",
+            "contract",
+            "currency"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_FORWARDED_REPOSITORY_ARGUMENTS_ALL_PATHS = Set.of(
+            "dateStart",
+            "dateFinish",
+            "contract",
+            "currency"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_FORWARDED_REPOSITORY_ARGUMENTS_LEAF_PATHS = Set.of(
+            "dateStart",
+            "dateFinish",
+            "contract",
+            "currency"
+    );
+
     private DocumentScenarioFetchPlanFixture() {
     }
 }

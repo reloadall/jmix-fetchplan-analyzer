@@ -67,6 +67,22 @@ class ReturnRebindingCanonicalOutputTest {
     }
 
     @Test
+    void valueCallReturnRebindingShouldNotUseSideEffectsAsReturnedValue() {
+        assertEquals(
+                Set.of("type.code"),
+                analyzePaths("valueCallReturnRebindingShouldNotUseSideEffectsAsReturnedValue")
+        );
+    }
+
+    @Test
+    void valueCallReturnRebindingShouldUseActualReturnedValue() {
+        assertEquals(
+                Set.of("shippingAddress.city"),
+                analyzePaths("valueCallReturnRebindingShouldUseActualReturnedValue")
+        );
+    }
+
+    @Test
     void castContinuationKeepsOnlyLeafCanonicalPath() {
         assertEquals(
                 Set.of("shippingAddress.city"),

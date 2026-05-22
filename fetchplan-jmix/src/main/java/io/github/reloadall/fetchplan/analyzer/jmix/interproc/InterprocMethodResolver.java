@@ -12,8 +12,10 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
@@ -70,13 +72,11 @@ public class InterprocMethodResolver {
 
         CompilationUnit targetCompilationUnit = targetCompilationUnitOpt.get();
 
-        String targetSimpleName = simpleName(concreteTargetClassName);
-
-        List<MethodDeclaration> matches = targetCompilationUnit.findAll(MethodDeclaration.class).stream()
-                .filter(method -> belongsToTargetType(method, targetSimpleName))
-                .filter(method -> method.getNameAsString().equals(methodCallExpr.getNameAsString()))
-                .filter(method -> method.getParameters().size() == methodCallExpr.getArguments().size())
-                .collect(Collectors.toList());
+        List<MethodDeclaration> matches = findMatchingMethodsInHierarchy(
+                targetCompilationUnit,
+                concreteTargetClassName,
+                methodCallExpr
+        );
 
         if (matches.size() != 1) {
             analysisTrace.log("INTERPROC: target method unresolved or ambiguous for call = " + methodCallExpr);
@@ -143,13 +143,12 @@ public class InterprocMethodResolver {
         }
 
         CompilationUnit targetCompilationUnit = targetCompilationUnitOpt.get();
-        String targetSimpleName = simpleName(concreteTargetClassName);
 
-        List<MethodDeclaration> matches = targetCompilationUnit.findAll(MethodDeclaration.class).stream()
-                .filter(method -> belongsToTargetType(method, targetSimpleName))
-                .filter(method -> method.getNameAsString().equals(methodCallExpr.getNameAsString()))
-                .filter(method -> method.getParameters().size() == methodCallExpr.getArguments().size())
-                .collect(Collectors.toList());
+        List<MethodDeclaration> matches = findMatchingMethodsInHierarchy(
+                targetCompilationUnit,
+                concreteTargetClassName,
+                methodCallExpr
+        );
 
         if (matches.size() != 1) {
             analysisTrace.log("INTERPROC: target method unresolved or ambiguous for concrete class = "
@@ -180,6 +179,94 @@ public class InterprocMethodResolver {
         return implementationClass
                 .map(Class::getName)
                 .or(() -> Optional.of(declaredClass.getName()));
+    }
+
+    private List<MethodDeclaration> findMatchingMethodsInHierarchy(CompilationUnit targetCompilationUnit,
+                                                                   String concreteTargetClassName,
+                                                                   MethodCallExpr methodCallExpr) {
+        return findMatchingMethodsInHierarchy(
+                targetCompilationUnit,
+                concreteTargetClassName,
+                methodCallExpr,
+                new LinkedHashSet<>()
+        );
+    }
+
+    private List<MethodDeclaration> findMatchingMethodsInHierarchy(CompilationUnit compilationUnit,
+                                                                   String className,
+                                                                   MethodCallExpr methodCallExpr,
+                                                                   Set<String> visitedClassNames) {
+        if (!visitedClassNames.add(className)) {
+            analysisTrace.log("INTERPROC: hierarchy skip visited class = " + className);
+            return List.of();
+        }
+
+        String targetSimpleName = simpleName(className);
+        analysisTrace.log("INTERPROC: hierarchy inspect class = " + className + " for call = " + methodCallExpr);
+        List<MethodDeclaration> localMatches = compilationUnit.findAll(MethodDeclaration.class).stream()
+                .filter(method -> belongsToTargetType(method, targetSimpleName))
+                .filter(method -> method.getNameAsString().equals(methodCallExpr.getNameAsString()))
+                .filter(method -> method.getParameters().size() == methodCallExpr.getArguments().size())
+                .collect(Collectors.toList());
+        if (!localMatches.isEmpty()) {
+            analysisTrace.log("INTERPROC: hierarchy local matches in " + className + " = " + localMatches.size());
+            return localMatches;
+        }
+
+        Optional<ClassOrInterfaceDeclaration> typeDeclarationOpt = compilationUnit.findFirst(
+                ClassOrInterfaceDeclaration.class,
+                type -> type.getNameAsString().equals(targetSimpleName)
+        );
+        if (typeDeclarationOpt.isEmpty()) {
+            return List.of();
+        }
+        ClassOrInterfaceDeclaration classDeclaration = typeDeclarationOpt.get();
+
+        for (ClassOrInterfaceType extendedType : classDeclaration.getExtendedTypes()) {
+            Optional<String> superClassNameOpt = resolveTypeNameToFqcn(compilationUnit, extendedType.asString());
+            if (superClassNameOpt.isEmpty()) {
+                analysisTrace.log("INTERPROC: hierarchy could not resolve superclass fqcn for " + extendedType.asString());
+                continue;
+            }
+            analysisTrace.log("INTERPROC: hierarchy try superclass = " + superClassNameOpt.get());
+
+            if (containsTypeDeclaration(compilationUnit, simpleName(superClassNameOpt.get()))) {
+                List<MethodDeclaration> sameUnitInheritedMatches = findMatchingMethodsInHierarchy(
+                        compilationUnit,
+                        superClassNameOpt.get(),
+                        methodCallExpr,
+                        visitedClassNames
+                );
+                if (!sameUnitInheritedMatches.isEmpty()) {
+                    return sameUnitInheritedMatches;
+                }
+            }
+
+            Optional<CompilationUnit> superCompilationUnitOpt = loadCompilationUnit(superClassNameOpt.get());
+            if (superCompilationUnitOpt.isEmpty()) {
+                analysisTrace.log("INTERPROC: hierarchy superclass source not found = " + superClassNameOpt.get());
+                continue;
+            }
+
+            List<MethodDeclaration> inheritedMatches = findMatchingMethodsInHierarchy(
+                    superCompilationUnitOpt.get(),
+                    superClassNameOpt.get(),
+                    methodCallExpr,
+                    visitedClassNames
+            );
+            if (!inheritedMatches.isEmpty()) {
+                return inheritedMatches;
+            }
+        }
+
+        return List.of();
+    }
+
+    private boolean containsTypeDeclaration(CompilationUnit compilationUnit, String simpleName) {
+        return compilationUnit.findFirst(
+                ClassOrInterfaceDeclaration.class,
+                type -> type.getNameAsString().equals(simpleName)
+        ).isPresent();
     }
 
     private Optional<Class<?>> tryLoadClass(String fqcn) {

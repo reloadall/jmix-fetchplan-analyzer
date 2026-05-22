@@ -2,8 +2,10 @@ package io.github.reloadall.fetchplan.analyzer.scenario.document.service;
 
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Address;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Contract;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Currency;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.DocumentLine;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,16 +16,19 @@ public class DocumentScenarioService {
     private final DocumentTypeReadService documentTypeReadService;
     private final ContractReadService contractReadService;
     private final LineReadService lineReadService;
+    private final RecordRepository recordRepository;
     private final List<DocumentWorker> workers;
 
     @Autowired
     public DocumentScenarioService(DocumentTypeReadService documentTypeReadService,
                                    ContractReadService contractReadService,
                                    LineReadService lineReadService,
+                                   RecordRepository recordRepository,
                                    List<DocumentWorker> workers) {
         this.documentTypeReadService = documentTypeReadService;
         this.contractReadService = contractReadService;
         this.lineReadService = lineReadService;
+        this.recordRepository = recordRepository;
         this.workers = workers;
     }
 
@@ -102,12 +107,43 @@ public class DocumentScenarioService {
         }
     }
 
+    public void inspectDocumentWithGetterArguments(Document document) {
+        DocumentFinder.findSomething(
+                document.getDateStart(),
+                document.getDateFinish(),
+                IdLike.of(document.getContract()),
+                IdLike.of(document.getCurrency())
+        );
+    }
+
+    public void inspectDocumentWithForwardedRepositoryArguments(Document document) {
+        findRecords(
+                document.getDateStart(),
+                document.getDateFinish(),
+                IdLike.of(document.getContract()),
+                IdLike.of(document.getCurrency())
+        );
+    }
+
     Address resolveShippingAddress(Document document) {
         return document.getShippingAddress();
     }
 
     Address loadShippingAddress(Document document) {
         return resolveShippingAddress(document);
+    }
+
+    private List<RecordView> findRecords(LocalDate dateStart,
+                                         LocalDate dateFinish,
+                                         IdLike<Contract> contractId,
+                                         IdLike<Currency> currencyId) {
+        return recordRepository.find(
+                dateStart,
+                dateFinish,
+                contractId,
+                currencyId,
+                LoadPlanLike.of("records")
+        );
     }
 
 }

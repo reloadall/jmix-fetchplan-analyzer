@@ -10,6 +10,7 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ForEachStmt;
@@ -58,15 +59,21 @@ public class InterprocReturnResolver {
                 new LinkedHashMap<>(targetBindings)
         );
 
-        ExpressionResolutionResult result = collectReturnValues(
+        ReturnWalkResult walkResult = collectReturnValues(
                 rawTree,
                 syntheticStep,
                 targetMethod.getBody().get().getStatements(),
                 context
         );
 
+        ExpressionResolutionResult result = walkResult.returnValues();
+
         if (result.isEmpty()) {
-            analysisTrace.log("INTERPROC: return resolver failed, no meaningful return node");
+            if (!walkResult.sideEffects().isEmpty()) {
+                analysisTrace.log("INTERPROC: return resolver found only side effects, no resolvable return value");
+            } else {
+                analysisTrace.log("INTERPROC: return resolver failed, no meaningful return node");
+            }
         } else {
             analysisTrace.log("INTERPROC: return resolver final nodes = "
                     + result.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
@@ -75,56 +82,65 @@ public class InterprocReturnResolver {
         return result;
     }
 
-    private ExpressionResolutionResult collectReturnValues(RawTree rawTree,
-                                                           AnalysisStep step,
-                                                           NodeList<Statement> statements,
-                                                           EngineContext context) {
-        ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+    private ReturnWalkResult collectReturnValues(RawTree rawTree,
+                                                 AnalysisStep step,
+                                                 NodeList<Statement> statements,
+                                                 EngineContext context) {
+        ExpressionResolutionResult returnValues = ExpressionResolutionResult.empty();
+        ExpressionResolutionResult sideEffects = ExpressionResolutionResult.empty();
 
         for (Statement statement : statements) {
             if (statement.isExpressionStmt()) {
-                handleExpressionStatement(rawTree, step, statement.asExpressionStmt().getExpression(), context);
+                sideEffects = sideEffects.merge(
+                        handleExpressionStatement(rawTree, step, statement.asExpressionStmt().getExpression(), context)
+                );
                 continue;
             }
 
             if (statement.isReturnStmt()) {
-                merged = merged.merge(
+                returnValues = returnValues.merge(
                         handleReturnStatement(rawTree, step, statement.asReturnStmt(), context)
                 );
                 continue;
             }
 
             if (statement.isIfStmt()) {
-                merged = merged.merge(
-                        handleIfStatement(rawTree, step, statement.asIfStmt(), context)
-                );
+                ReturnWalkResult nested = handleIfStatement(rawTree, step, statement.asIfStmt(), context);
+                returnValues = returnValues.merge(nested.returnValues());
+                sideEffects = sideEffects.merge(nested.sideEffects());
                 continue;
             }
 
             if (statement.isForEachStmt()) {
-                merged = merged.merge(
-                        handleForEachStatement(rawTree, step, statement.asForEachStmt(), context)
-                );
+                ReturnWalkResult nested = handleForEachStatement(rawTree, step, statement.asForEachStmt(), context);
+                returnValues = returnValues.merge(nested.returnValues());
+                sideEffects = sideEffects.merge(nested.sideEffects());
                 continue;
             }
 
             if (statement.isBlockStmt()) {
                 AnalysisStep nestedStep = copyStep(step);
-                merged = merged.merge(
-                        collectReturnValues(rawTree, nestedStep, statement.asBlockStmt().getStatements(), context)
+                ReturnWalkResult nested = collectReturnValues(
+                        rawTree,
+                        nestedStep,
+                        statement.asBlockStmt().getStatements(),
+                        context
                 );
+                returnValues = returnValues.merge(nested.returnValues());
+                sideEffects = sideEffects.merge(nested.sideEffects());
             }
         }
 
-        return merged;
+        return new ReturnWalkResult(returnValues, sideEffects);
     }
 
-    private void handleExpressionStatement(RawTree rawTree,
-                                           AnalysisStep step,
-                                           Expression expression,
-                                           EngineContext context) {
+    private ExpressionResolutionResult handleExpressionStatement(RawTree rawTree,
+                                                                 AnalysisStep step,
+                                                                 Expression expression,
+                                                                 EngineContext context) {
         if (expression.isVariableDeclarationExpr()) {
             VariableDeclarationExpr variableDeclarationExpr = expression.asVariableDeclarationExpr();
+            ExpressionResolutionResult sideEffects = ExpressionResolutionResult.empty();
 
             for (VariableDeclarator variable : variableDeclarationExpr.getVariables()) {
                 if (variable.getInitializer().isEmpty()) {
@@ -140,16 +156,19 @@ public class InterprocReturnResolver {
 
                 if (!result.isEmpty()) {
                     bindResolved(rawTree, step, variable.getNameAsString(), result);
+                    if (containsTerminalNodes(result)) {
+                        sideEffects = sideEffects.merge(result);
+                    }
                 }
             }
-            return;
+            return sideEffects;
         }
 
         if (expression.isAssignExpr()) {
             AssignExpr assignExpr = expression.asAssignExpr();
 
             if (!assignExpr.getTarget().isNameExpr()) {
-                return;
+                return ExpressionResolutionResult.empty();
             }
 
             ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
@@ -162,7 +181,99 @@ public class InterprocReturnResolver {
             if (!result.isEmpty()) {
                 bindResolved(rawTree, step, assignExpr.getTarget().asNameExpr().getNameAsString(), result);
             }
+
+            return containsTerminalNodes(result) ? result : ExpressionResolutionResult.empty();
         }
+
+        ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                expression,
+                context
+        );
+
+        if (result.isEmpty()) {
+            result = collectBoundaryArgumentUsages(rawTree, step, expression, context);
+        }
+
+        result = preserveTechnicalIdBoundaryAnchor(expression, result);
+        if (!result.isEmpty()) {
+            markTerminal(result);
+            analysisTrace.log("INTERPROC: return resolver preserved expression statement -> nodes="
+                    + result.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
+        }
+
+        return result;
+    }
+
+    private ExpressionResolutionResult collectBoundaryArgumentUsages(RawTree rawTree,
+                                                                    AnalysisStep step,
+                                                                    Expression expression,
+                                                                    EngineContext context) {
+        if (expression == null) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        if (expression.isNameExpr()) {
+            ValueBinding binding = step.getBinding(expression.asNameExpr().getNameAsString());
+            if (binding != null && binding.isTerminalOnly() && !binding.isEmpty()) {
+                return new ExpressionResolutionResult(binding.getNodes(), binding.isUncertain());
+            }
+        }
+
+        if (expression.isMethodCallExpr()) {
+            ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+            MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
+            for (Expression argument : methodCallExpr.getArguments()) {
+                ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
+                        rawTree,
+                        step,
+                        argument,
+                        context
+                );
+
+                if (argumentResult.isEmpty()) {
+                    argumentResult = collectBoundaryArgumentUsages(rawTree, step, argument, context);
+                }
+
+                if (!argumentResult.isEmpty()) {
+                    markTerminal(argumentResult);
+                    merged = merged.merge(argumentResult);
+                }
+            }
+            return merged;
+        }
+
+        if (expression.isNameExpr()) {
+            ValueBinding binding = step.getBinding(expression.asNameExpr().getNameAsString());
+            if (binding != null && binding.isTerminalOnly() && !binding.isEmpty()) {
+                return new ExpressionResolutionResult(binding.getNodes(), binding.isUncertain());
+            }
+        }
+
+        if (expression.isObjectCreationExpr()) {
+            ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+            for (Expression argument : expression.asObjectCreationExpr().getArguments()) {
+                ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
+                        rawTree,
+                        step,
+                        argument,
+                        context
+                );
+
+                if (argumentResult.isEmpty()) {
+                    argumentResult = collectBoundaryArgumentUsages(rawTree, step, argument, context);
+                }
+
+                if (!argumentResult.isEmpty()) {
+                    markTerminal(argumentResult);
+                    merged = merged.merge(argumentResult);
+                }
+            }
+            return merged;
+        }
+
+        return ExpressionResolutionResult.empty();
     }
 
     private ExpressionResolutionResult handleReturnStatement(RawTree rawTree,
@@ -190,6 +301,10 @@ public class InterprocReturnResolver {
                 expression,
                 context
         );
+
+        if (result.isEmpty()) {
+            result = collectBoundaryArgumentUsages(rawTree, step, expression, context);
+        }
 
         if (!result.isEmpty()) {
             analysisTrace.log("INTERPROC: return resolver resolved return -> nodes="
@@ -222,10 +337,10 @@ public class InterprocReturnResolver {
         return leftResult.merge(rightResult);
     }
 
-    private ExpressionResolutionResult handleIfStatement(RawTree rawTree,
-                                                         AnalysisStep step,
-                                                         IfStmt ifStmt,
-                                                         EngineContext context) {
+    private ReturnWalkResult handleIfStatement(RawTree rawTree,
+                                               AnalysisStep step,
+                                               IfStmt ifStmt,
+                                               EngineContext context) {
         context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
@@ -234,14 +349,17 @@ public class InterprocReturnResolver {
         );
 
         AnalysisStep thenStep = copyStep(step);
-        ExpressionResolutionResult thenResult = collectFromStatement(
+        ReturnWalkResult thenResult = collectFromStatement(
                 rawTree,
                 thenStep,
                 ifStmt.getThenStmt(),
                 context
         );
 
-        ExpressionResolutionResult elseResult = ExpressionResolutionResult.empty();
+        ReturnWalkResult elseResult = new ReturnWalkResult(
+                ExpressionResolutionResult.empty(),
+                ExpressionResolutionResult.empty()
+        );
         if (ifStmt.getElseStmt().isPresent()) {
             AnalysisStep elseStep = copyStep(step);
             elseResult = collectFromStatement(
@@ -252,13 +370,16 @@ public class InterprocReturnResolver {
             );
         }
 
-        return thenResult.merge(elseResult);
+        return new ReturnWalkResult(
+                thenResult.returnValues().merge(elseResult.returnValues()),
+                thenResult.sideEffects().merge(elseResult.sideEffects())
+        );
     }
 
-    private ExpressionResolutionResult handleForEachStatement(RawTree rawTree,
-                                                              AnalysisStep step,
-                                                              ForEachStmt forEachStmt,
-                                                              EngineContext context) {
+    private ReturnWalkResult handleForEachStatement(RawTree rawTree,
+                                                    AnalysisStep step,
+                                                    ForEachStmt forEachStmt,
+                                                    EngineContext context) {
         context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
@@ -270,10 +391,10 @@ public class InterprocReturnResolver {
         return collectFromStatement(rawTree, bodyStep, forEachStmt.getBody(), context);
     }
 
-    private ExpressionResolutionResult collectFromStatement(RawTree rawTree,
-                                                            AnalysisStep step,
-                                                            Statement statement,
-                                                            EngineContext context) {
+    private ReturnWalkResult collectFromStatement(RawTree rawTree,
+                                                  AnalysisStep step,
+                                                  Statement statement,
+                                                  EngineContext context) {
         if (statement.isBlockStmt()) {
             BlockStmt blockStmt = statement.asBlockStmt();
             return collectReturnValues(rawTree, step, blockStmt.getStatements(), context);
@@ -342,5 +463,52 @@ public class InterprocReturnResolver {
         for (RawNode node : result.getNodes()) {
             node.setUsageKind(UsageKind.TERMINAL);
         }
+    }
+
+    private boolean containsTerminalNodes(ExpressionResolutionResult result) {
+        for (RawNode node : result.getNodes()) {
+            if (node.getUsageKind() == UsageKind.TERMINAL) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ExpressionResolutionResult preserveTechnicalIdBoundaryAnchor(Expression expression,
+                                                                         ExpressionResolutionResult result) {
+        if (expression == null || result.isEmpty() || !expression.isMethodCallExpr()) {
+            return result;
+        }
+
+        MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
+        if (!"getId".equals(methodCallExpr.getNameAsString()) || !methodCallExpr.getArguments().isEmpty()) {
+            return result;
+        }
+
+        java.util.Set<RawNode> anchors = new java.util.LinkedHashSet<>();
+        for (RawNode node : result.getNodes()) {
+            if (!"id".equals(node.getEntityField())) {
+                return result;
+            }
+
+            RawNode parent = node.getParent();
+            if (parent == null || parent.getFlowKind() != io.github.reloadall.fetchplan.analyzer.jmix.tree.FlowKind.DIRECT) {
+                return result;
+            }
+
+            anchors.add(parent);
+        }
+
+        if (anchors.isEmpty()) {
+            return result;
+        }
+
+        analysisTrace.log("INTERPROC: preserved pre-boundary anchor for technical id access -> nodes="
+                + anchors.stream().map(node -> String.valueOf(node.getId())).toList());
+        return new ExpressionResolutionResult(anchors, result.isUncertain());
+    }
+
+    private record ReturnWalkResult(ExpressionResolutionResult returnValues,
+                                    ExpressionResolutionResult sideEffects) {
     }
 }

@@ -116,6 +116,14 @@ public class InterprocMethodCallExpressionHandler implements ExpressionHandler {
     }
 
     private RawNode resolveEntryAnchor(Map<String, ValueBinding> targetBindings, RawNode fallback) {
+        long nonEmptyBindings = targetBindings.values().stream()
+                .filter(binding -> binding != null && !binding.isEmpty())
+                .count();
+
+        if (nonEmptyBindings > 1) {
+            return fallback;
+        }
+
         for (ValueBinding binding : targetBindings.values()) {
             if (!binding.isEmpty()) {
                 return binding.getNodes().iterator().next();

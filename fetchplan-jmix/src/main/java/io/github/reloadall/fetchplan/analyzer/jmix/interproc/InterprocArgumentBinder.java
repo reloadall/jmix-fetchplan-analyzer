@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
@@ -43,16 +44,27 @@ public class InterprocArgumentBinder {
 
         for (int i = 0; i < methodCallExpr.getArguments().size(); i++) {
             Parameter parameter = targetMethod.getParameter(i);
+            Expression argument = methodCallExpr.getArgument(i);
 
             ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
                     rawTree,
                     step,
-                    methodCallExpr.getArgument(i),
+                    argument,
                     context
             );
 
+            if (result.isEmpty()) {
+                result = collectForwardedArgumentSources(rawTree, step, argument, context);
+            }
+
             if (!result.isEmpty()) {
-                bindings.put(parameter.getNameAsString(), ValueBinding.from(result));
+                boolean terminalOnly = shouldBindAsTerminalOnly(rawTree, step, argument, context);
+                bindings.put(
+                        parameter.getNameAsString(),
+                        terminalOnly
+                                ? ValueBinding.terminalOnly(result.getNodes(), result.isUncertain())
+                                : ValueBinding.from(result)
+                );
                 analysisTrace.log("INTERPROC: arg[" + i + "] param=" + parameter.getNameAsString()
                         + " resolved to nodes="
                         + result.getNodes().stream().map(n -> String.valueOf(n.getId())).toList());
@@ -69,5 +81,70 @@ public class InterprocArgumentBinder {
 
         analysisTrace.log("INTERPROC: bindArguments success, bound params = " + bindings.keySet());
         return Optional.of(bindings);
+    }
+
+    private boolean shouldBindAsTerminalOnly(RawTree rawTree,
+                                             AnalysisStep step,
+                                             Expression expression,
+                                             EngineContext context) {
+        ExpressionResolutionResult direct = context.getExpressionResolver().resolveAll(rawTree, step, expression, context);
+        return direct.isEmpty();
+    }
+
+    private ExpressionResolutionResult collectForwardedArgumentSources(RawTree rawTree,
+                                                                       AnalysisStep step,
+                                                                       Expression expression,
+                                                                       EngineContext context) {
+        if (expression == null) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        if (expression.isCastExpr()) {
+            return collectForwardedArgumentSources(rawTree, step, expression.asCastExpr().getExpression(), context);
+        }
+
+        if (expression.isEnclosedExpr()) {
+            return collectForwardedArgumentSources(rawTree, step, expression.asEnclosedExpr().getInner(), context);
+        }
+
+        if (expression.isMethodCallExpr()) {
+            ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+            for (Expression argument : expression.asMethodCallExpr().getArguments()) {
+                ExpressionResolutionResult nested = context.getExpressionResolver().resolveAll(
+                        rawTree,
+                        step,
+                        argument,
+                        context
+                );
+
+                if (nested.isEmpty()) {
+                    nested = collectForwardedArgumentSources(rawTree, step, argument, context);
+                }
+
+                merged = merged.merge(nested);
+            }
+            return merged;
+        }
+
+        if (expression.isObjectCreationExpr()) {
+            ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
+            for (Expression argument : expression.asObjectCreationExpr().getArguments()) {
+                ExpressionResolutionResult nested = context.getExpressionResolver().resolveAll(
+                        rawTree,
+                        step,
+                        argument,
+                        context
+                );
+
+                if (nested.isEmpty()) {
+                    nested = collectForwardedArgumentSources(rawTree, step, argument, context);
+                }
+
+                merged = merged.merge(nested);
+            }
+            return merged;
+        }
+
+        return ExpressionResolutionResult.empty();
     }
 }
