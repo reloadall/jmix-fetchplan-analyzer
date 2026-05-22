@@ -83,6 +83,14 @@ class ReturnRebindingCanonicalOutputTest {
     }
 
     @Test
+    void valueCallReturnRebindingShouldPreserveSideEffectsAndReturnedLeaf() {
+        assertEquals(
+                Set.of("type.code", "shippingAddress.city"),
+                analyzePaths("valueCallReturnRebindingShouldPreserveSideEffectsAndReturnedLeaf")
+        );
+    }
+
+    @Test
     void castContinuationKeepsOnlyLeafCanonicalPath() {
         assertEquals(
                 Set.of("shippingAddress.city"),

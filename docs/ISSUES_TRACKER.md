@@ -262,6 +262,25 @@ Status values used below:
 
 ---
 
+## ISSUE-010B — Value-call planning contract around eager return rebinding plus callee-body traversal was implicit and needed regression protection
+
+- Status: `RESOLVED`
+- Area: `InterprocCallPlanner.planValueCall(...)` / interprocedural value-call semantics
+- Found during: Step 5 audit of eager return rebinding vs target-method continuation
+- Summary:
+  `planValueCall(...)` eagerly resolves the return value for caller-variable rebinding and still schedules callee-body traversal. That combination is intentional, but without explicit contract/tests it risked future regressions such as duplicate canonical output, leaked structural parents, or fake continuation from helper side effects.
+- Required contract:
+  1. eager return rebinding exists so caller continuation can continue from the returned entity anchor;
+  2. callee traversal remains necessary so helper-body side effects/usages can still be preserved;
+  3. callee return traversal must not turn the returned anchor into standalone terminal noise when caller continues deeper.
+- Resolution:
+  Kept the behavior conservative and unchanged architecturally, but documented the contract directly in `InterprocCallPlanner.planValueCall(...)` and added focused regression coverage for:
+  - pure return + caller continuation -> only `shippingAddress.city`;
+  - side effect + real return -> `type.code` and `shippingAddress.city`;
+  - side effect + unresolved return -> no caller rebinding from side effects.
+
+---
+
 ## ISSUE-011 — Scenario uncertainty coverage currently depends on integration wiring gaps rather than a dedicated isolated core regression test
 
 - Status: `PARTIALLY MITIGATED`

@@ -32,6 +32,11 @@ public class ReturnRebindingFixtureService {
         address.getCity();
     }
 
+    public void valueCallReturnRebindingShouldPreserveSideEffectsAndReturnedLeaf(Document document) {
+        Address address = helperWithSideEffectAndReturn(document);
+        address.getCity();
+    }
+
     public void castContinuation(Document document) {
         Object address = document.getShippingAddress();
         Address castedAddress = (Address) address;
@@ -52,6 +57,11 @@ public class ReturnRebindingFixtureService {
     }
 
     Address helperReturningShippingAddress(Document document) {
+        return document.getShippingAddress();
+    }
+
+    Address helperWithSideEffectAndReturn(Document document) {
+        document.getType().getCode();
         return document.getShippingAddress();
     }
 }
