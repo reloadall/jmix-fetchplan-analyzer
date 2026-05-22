@@ -121,15 +121,15 @@ public class InterprocCallPlanner {
                 targetInvocation.entryAnchor,
                 context
         );
-        if (returnResult.isEmpty()) {
-            analysisTrace.log("INTERPROC: value-call failed, return node unresolved for " + methodCallExpr);
-            return Optional.empty();
-        }
-
-        ValueBinding boundReturnBinding = bindReturnValue(rawTree, targetVariableName, returnResult);
-
         Map<String, ValueBinding> callerBindings = new HashMap<>(step.getBindings());
-        callerBindings.put(targetVariableName, boundReturnBinding);
+        ValueBinding boundReturnBinding = null;
+        if (returnResult.isEmpty()) {
+            analysisTrace.log("INTERPROC: value-call has no rebindable return, preserving callee body reads for "
+                    + methodCallExpr);
+        } else {
+            boundReturnBinding = bindReturnValue(rawTree, targetVariableName, returnResult);
+            callerBindings.put(targetVariableName, boundReturnBinding);
+        }
 
         StatementsPayload afterCallPayload = currentPayload.next();
         Continuation returnToCaller = new Continuation(
@@ -158,9 +158,11 @@ public class InterprocCallPlanner {
 
         analysisTrace.log("INTERPROC: planned value-call into "
                 + targetInvocation.targetMethod.getNameAsString()
-                + ", return bound to variable " + targetVariableName
+                + (boundReturnBinding == null
+                ? ", without caller rebinding for variable " + targetVariableName
+                : ", return bound to variable " + targetVariableName
                 + " via nodes="
-                + boundReturnBinding.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
+                + boundReturnBinding.getNodes().stream().map(node -> String.valueOf(node.getId())).toList()));
 
         return Optional.of(new InterprocCallPlan(targetMethodContinuation));
     }

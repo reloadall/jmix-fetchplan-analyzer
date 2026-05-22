@@ -91,6 +91,9 @@ Status values used below:
   - explicit `this.someMethod(...)` flow;
   - simple value-call assignment flow;
   - same-class helper return rebinding.
+  Added focused regression coverage in `ReturnRebindingCanonicalOutputTest` for helper-body entity reads preserved across
+  same-class value-calls whose helper return value is non-entity / not rebindable, including foreach element binding,
+  constructor-argument usage boundary, and nested method-call argument usage (`currentSum.add(line.getCost())`).
 - Remaining gap:
   Interproc behavior is still not deeply isolated by focused core regression tests for recursion guard, ambiguous resolution, or broader bean-resolution cases.
 

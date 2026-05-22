@@ -32,6 +32,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceMethodResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService.GroupingAct;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
@@ -114,7 +115,49 @@ class ReturnRebindingCanonicalOutputTest {
         );
     }
 
+    @Test
+    void helperBodyReadsShouldBePreservedForNonRebindableValueCall() {
+        assertEquals(
+                Set.of(
+                        "liabilityLines.rate",
+                        "liabilityLines.nomenclature",
+                        "liabilityLines.type",
+                        "liabilityLines.cost",
+                        "paymentLines.rate",
+                        "paymentLines.nomenclature",
+                        "paymentLines.type",
+                        "paymentLines.cost"
+                ),
+                analyzePaths(
+                        "helperBodyReadsShouldBePreservedForNonRebindableValueCall",
+                        "act",
+                        GroupingAct.class.getSimpleName()
+                )
+        );
+    }
+
+    @Test
+    void helperBodyReadsShouldIgnoreReturnedMapUsageForNonRebindableValueCall() {
+        assertEquals(
+                Set.of(
+                        "liabilityLines.rate",
+                        "liabilityLines.nomenclature",
+                        "liabilityLines.type",
+                        "liabilityLines.cost"
+                ),
+                analyzePaths(
+                        "helperBodyReadsShouldIgnoreReturnedMapUsageForNonRebindableValueCall",
+                        "act",
+                        GroupingAct.class.getSimpleName()
+                )
+        );
+    }
+
     private Set<String> analyzePaths(String methodName) {
+        return analyzePaths(methodName, "document", Document.class.getName());
+    }
+
+    private Set<String> analyzePaths(String methodName, String rootParamName, String rootParamType) {
         AnalysisTrace analysisTrace = new AnalysisTrace();
 
         Path scenarioSourceRoot = Path.of("..", "fetchplan-jmix-test-scenarios", "src", "main", "java")
@@ -177,11 +220,11 @@ class ReturnRebindingCanonicalOutputTest {
         MethodDeclaration method = sourceMethodResolver.resolve(
                 ReturnRebindingFixtureService.class.getName(),
                 methodName,
-                "document",
-                Document.class.getName()
+                rootParamName,
+                rootParamType
         );
 
-        RawTree rawTree = astPathEngine.analyze(method, "document");
+        RawTree rawTree = astPathEngine.analyze(method, rootParamName);
         return new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
     }
 }

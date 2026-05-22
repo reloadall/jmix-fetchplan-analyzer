@@ -1,8 +1,10 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -154,6 +156,19 @@ public class InterprocReturnResolver {
                         context
                 );
 
+                Expression initializer = variable.getInitializer().get();
+                ExpressionResolutionResult boundaryUsages = collectBoundaryArgumentUsages(
+                        rawTree,
+                        step,
+                        initializer,
+                        context
+                );
+                boundaryUsages = preserveTechnicalIdBoundaryAnchor(initializer, boundaryUsages);
+                if (!boundaryUsages.isEmpty()) {
+                    markTerminal(boundaryUsages);
+                    sideEffects = sideEffects.merge(boundaryUsages);
+                }
+
                 if (!result.isEmpty()) {
                     bindResolved(rawTree, step, variable.getNameAsString(), result);
                     if (containsTerminalNodes(result)) {
@@ -178,11 +193,26 @@ public class InterprocReturnResolver {
                     context
             );
 
+            ExpressionResolutionResult boundaryUsages = collectBoundaryArgumentUsages(
+                    rawTree,
+                    step,
+                    assignExpr.getValue(),
+                    context
+            );
+            boundaryUsages = preserveTechnicalIdBoundaryAnchor(assignExpr.getValue(), boundaryUsages);
+            if (!boundaryUsages.isEmpty()) {
+                markTerminal(boundaryUsages);
+            }
+
             if (!result.isEmpty()) {
                 bindResolved(rawTree, step, assignExpr.getTarget().asNameExpr().getNameAsString(), result);
             }
 
-            return containsTerminalNodes(result) ? result : ExpressionResolutionResult.empty();
+            ExpressionResolutionResult terminalResult = containsTerminalNodes(result)
+                    ? result
+                    : ExpressionResolutionResult.empty();
+
+            return terminalResult.merge(boundaryUsages);
         }
 
         ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
@@ -380,7 +410,7 @@ public class InterprocReturnResolver {
                                                     AnalysisStep step,
                                                     ForEachStmt forEachStmt,
                                                     EngineContext context) {
-        context.getExpressionResolver().resolveAll(
+        ExpressionResolutionResult iterableResult = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
                 forEachStmt.getIterable(),
@@ -388,7 +418,34 @@ public class InterprocReturnResolver {
         );
 
         AnalysisStep bodyStep = copyStep(step);
+        if (!iterableResult.isEmpty()) {
+            Set<RawNode> elementNodes = new LinkedHashSet<>();
+            for (RawNode iterableNode : iterableResult.getNodes()) {
+                RawNode elementNode = rawTree.addChild(
+                        iterableNode,
+                        null,
+                        io.github.reloadall.fetchplan.analyzer.jmix.tree.FlowKind.COLLECTION_ELEMENT,
+                        null,
+                        UsageKind.INTERMEDIATE
+                );
+                elementNodes.add(elementNode);
+            }
+
+            if (!elementNodes.isEmpty()) {
+                String loopVariableName = resolveLoopVariableName(forEachStmt);
+                bodyStep.bind(loopVariableName, new ValueBinding(elementNodes, iterableResult.isUncertain()));
+            }
+        }
+
         return collectFromStatement(rawTree, bodyStep, forEachStmt.getBody(), context);
+    }
+
+    private String resolveLoopVariableName(ForEachStmt forEachStmt) {
+        java.util.List<VariableDeclarator> variables = forEachStmt.getVariable().getVariables();
+        if (variables.isEmpty()) {
+            throw new IllegalStateException("ForEach variable is absent");
+        }
+        return variables.get(0).getNameAsString();
     }
 
     private ReturnWalkResult collectFromStatement(RawTree rawTree,
