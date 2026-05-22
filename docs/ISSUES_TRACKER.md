@@ -281,6 +281,23 @@ Status values used below:
 
 ---
 
+## ISSUE-010C — `ExpressionResolver` comments implied merge-friendly semantics while implementation was first-meaningful-result
+
+- Status: `RESOLVED`
+- Area: `ExpressionResolver` / handler-order contract
+- Found during: Step 6 contract-hardening audit
+- Summary:
+  `ExpressionResolver` behavior is intentionally order-sensitive, but in-code comments implied that compatible handler results might be merged. That was misleading because implementation returned as soon as the first non-empty or uncertain result appeared.
+- Why this matters:
+  Handler order is observable analyzer behavior. Misstating the contract could lead to unsafe future changes that assume later handlers may refine or merge the same expression result.
+- Resolution:
+  Updated `ExpressionResolver` comments to explicitly document the current first-meaningful-result strategy and added focused regression coverage proving that:
+  - handler order is deterministic;
+  - the first non-empty result wins;
+  - an uncertain first meaningful result also stops later handlers.
+
+---
+
 ## ISSUE-011 — Scenario uncertainty coverage currently depends on integration wiring gaps rather than a dedicated isolated core regression test
 
 - Status: `PARTIALLY MITIGATED`
