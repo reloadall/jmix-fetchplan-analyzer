@@ -106,7 +106,11 @@ public class VisitedKeyFactory {
                         .sorted()
                         .map(String::valueOf)
                         .collect(Collectors.joining(","))
-                        + "|u=" + entry.getValue().isUncertain())
+                        + "|u=" + entry.getValue().isUncertain()
+                        + "|t=" + entry.getValue().isTerminalOnly()
+                        + "|d=" + entry.getValue().getDispatchTargetClassNames().stream()
+                        .sorted()
+                        .collect(Collectors.joining(",")))
                 .collect(Collectors.joining("||"));
     }
 

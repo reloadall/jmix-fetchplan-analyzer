@@ -298,6 +298,27 @@ Status values used below:
 
 ---
 
+## ISSUE-006A — Visited-key binding fingerprint previously ignored dispatch targets and terminal-only semantics
+
+- Status: `RESOLVED`
+- Area: `VisitedKeyFactory` / recursion guard / branch identity
+- Found during: Step 7 visited-key audit
+- Summary:
+  The visited key already distinguished method, payload/AST position, current raw anchor, binding node ids, and uncertainty, but binding fingerprint did not include dispatch target sets or the `terminalOnly` flag.
+- Why this matters:
+  Two semantically different analysis branches could otherwise collide when they shared the same binding name and raw-node ids but differed in dispatch/fan-out semantics or terminal-only boundary behavior.
+- Resolution:
+  Minimally extended the bindings fingerprint in `VisitedKeyFactory` to include:
+  - sorted dispatch target class names;
+  - `terminalOnly` flag.
+  Added focused regression coverage proving that visited keys now differ for:
+  - different raw anchors;
+  - different binding target nodes;
+  - different dispatch target sets;
+  - different `terminalOnly` binding state.
+
+---
+
 ## ISSUE-011 — Scenario uncertainty coverage currently depends on integration wiring gaps rather than a dedicated isolated core regression test
 
 - Status: `PARTIALLY MITIGATED`
