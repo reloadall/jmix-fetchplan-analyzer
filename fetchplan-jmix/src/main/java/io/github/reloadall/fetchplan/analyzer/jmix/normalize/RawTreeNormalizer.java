@@ -44,11 +44,13 @@ public class RawTreeNormalizer {
                     return;
                 }
                 nextPathNode = currentPathNode.getOrCreateChild(field);
+                nextPathNode.setLeafCandidate(true);
             }
 
             case COLLECTION_ELEMENT, ALIAS -> nextPathNode = currentPathNode;
 
             case UNKNOWN_BREAK -> {
+                currentPathNode.setBlockedByUncertainty(true);
                 return;
             }
         }

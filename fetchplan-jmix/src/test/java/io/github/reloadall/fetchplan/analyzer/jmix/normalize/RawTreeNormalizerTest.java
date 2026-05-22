@@ -54,4 +54,53 @@ class RawTreeNormalizerTest {
 
         assertEquals(Set.of("type", "type.code"), paths);
     }
+
+    @Test
+    void emitsIntermediateAssociationAsLeafWhenNoDeeperDescendantsExist() {
+        RawTree rawTree = new RawTree();
+        RawNode root = rawTree.createRoot("entity");
+        rawTree.addChild(root, "shippingAddress", FlowKind.DIRECT, null, UsageKind.INTERMEDIATE);
+
+        Set<String> paths = flattener.flatten(normalizer.normalize(rawTree));
+
+        assertEquals(Set.of("shippingAddress"), paths);
+    }
+
+    @Test
+    void suppressesIntermediateAssociationWhenOnlyDeeperLeafExists() {
+        RawTree rawTree = new RawTree();
+        RawNode root = rawTree.createRoot("entity");
+        RawNode shippingAddress = rawTree.addChild(root, "shippingAddress", FlowKind.DIRECT, null, UsageKind.INTERMEDIATE);
+        rawTree.addChild(shippingAddress, "city", FlowKind.DIRECT, null, UsageKind.TERMINAL);
+
+        Set<String> paths = flattener.flatten(normalizer.normalize(rawTree));
+
+        assertEquals(Set.of("shippingAddress.city"), paths);
+    }
+
+    @Test
+    void doesNotTurnParentIntoLeafWhenDeeperAccessFallsIntoUnknownBreak() {
+        RawTree rawTree = new RawTree();
+        RawNode root = rawTree.createRoot("entity");
+        RawNode shippingAddress = rawTree.addChild(root, "shippingAddress", FlowKind.DIRECT, null, UsageKind.INTERMEDIATE);
+        RawNode unknown = rawTree.addUnknownBreak(shippingAddress, "tmp", UsageKind.INTERMEDIATE);
+        rawTree.addChild(unknown, "city", FlowKind.DIRECT, null, UsageKind.TERMINAL);
+
+        Set<String> paths = flattener.flatten(normalizer.normalize(rawTree));
+
+        assertEquals(Set.of(), paths);
+    }
+
+    @Test
+    void suppressesExplicitTerminalSystemLeafAndKeepsUsefulParentAnchor() {
+        RawTree rawTree = new RawTree();
+        RawNode root = rawTree.createRoot("entity");
+        RawNode parent = rawTree.addChild(root, "parent", FlowKind.DIRECT, null, UsageKind.INTERMEDIATE);
+        RawNode lineBase = rawTree.addChild(parent, "lineBase", FlowKind.DIRECT, null, UsageKind.TERMINAL);
+        rawTree.addChild(lineBase, "id", FlowKind.DIRECT, null, UsageKind.TERMINAL);
+
+        Set<String> paths = flattener.flatten(normalizer.normalize(rawTree));
+
+        assertEquals(Set.of("parent.lineBase"), paths);
+    }
 }

@@ -152,9 +152,15 @@ Important note:
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the minimal chained method-reference pattern are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
-- structural parent/container paths with deeper analyzed descendants are treated as containers, not as standalone analyzed
-  terminal paths only when they were not actually accessed in code; real metadata-backed property access events such as
-  `doc.getContract()` or `doc.getType()` are preserved as analyzed paths even when deeper property reads also exist.
+- structural parent/container paths are not emitted merely because deeper descendants exist.
+  They are emitted only when the parent property itself was actually accessed under the current policy.
+  Real metadata-backed property access events such as `doc.getContract()` or `doc.getType()` therefore remain analyzed
+  paths even when deeper property reads also exist.
+- association/reference getter access now follows an explicit leaf policy:
+  - a metadata-backed association accessed without deeper analyzed descendant usage is emitted as a valid leaf path;
+  - if the same association is used only as an intermediate anchor for deeper access, only deeper leaf paths are emitted;
+  - explicit standalone getter usage remains terminal and may coexist with deeper leaf usage;
+  - the same rule applies to simple interprocedural return rebinding and null-check style association access.
 
 Do not treat it as:
 - a proof engine for arbitrary Java

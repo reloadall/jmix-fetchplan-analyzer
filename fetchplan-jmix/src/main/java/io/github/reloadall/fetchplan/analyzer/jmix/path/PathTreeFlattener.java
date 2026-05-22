@@ -8,6 +8,17 @@ import org.springframework.stereotype.Component;
 @Component("fpa_PathTreeFlattener")
 public class PathTreeFlattener {
 
+    private static final Set<String> SYSTEM_FIELD_NAMES = Set.of(
+            "id",
+            "version",
+            "createTs",
+            "createdBy",
+            "updateTs",
+            "updatedBy",
+            "deleteTs",
+            "deletedBy"
+    );
+
     public Set<String> flatten(PathTree pathTree) {
         Set<String> result = new LinkedHashSet<>();
 
@@ -27,12 +38,33 @@ public class PathTreeFlattener {
                 ? node.getSegment()
                 : prefix + "." + node.getSegment();
 
-        if (node.isTerminal()) {
-            result.add(currentPath);
+        boolean hasEmittedDescendant = false;
+        for (PathNode child : node.getChildren().values()) {
+            int before = result.size();
+            visit(child, currentPath, result);
+            if (result.size() > before) {
+                hasEmittedDescendant = true;
+            }
         }
 
-        for (PathNode child : node.getChildren().values()) {
-            visit(child, currentPath, result);
+        if (shouldEmit(node, hasEmittedDescendant)) {
+            result.add(currentPath);
         }
+    }
+
+    private boolean shouldEmit(PathNode node, boolean hasEmittedDescendant) {
+        if (SYSTEM_FIELD_NAMES.contains(node.getSegment())) {
+            return false;
+        }
+
+        if (node.isExplicitTerminal()) {
+            return true;
+        }
+
+        if (node.isBlockedByUncertainty()) {
+            return false;
+        }
+
+        return node.isLeafCandidate() && !hasEmittedDescendant;
     }
 }

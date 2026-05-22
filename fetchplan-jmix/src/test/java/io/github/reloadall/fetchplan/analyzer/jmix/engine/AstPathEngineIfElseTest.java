@@ -107,4 +107,41 @@ class AstPathEngineIfElseTest {
 
         assertEquals(Set.of("type.archived", "customer.name", "type.code"), paths);
     }
+
+    @Test
+    void nullCheckAssociationAccessEmitsAssociationLeafPath() {
+        InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
+        when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(interprocCallPlanner.planValueCall(any(), any(), any(), any(), any())).thenReturn(Optional.empty());
+
+        NameExpressionHandler nameHandler = new NameExpressionHandler();
+        MethodCallExpressionHandler methodCallHandler = new MethodCallExpressionHandler();
+        ExpressionResolver expressionResolver = new ExpressionResolver(List.of(nameHandler, methodCallHandler));
+        EngineContext context = new EngineContext(expressionResolver);
+
+        StatementHandler expressionStatementHandler = new ExpressionStatementHandler(
+                new UnknownBreakPolicy(),
+                interprocCallPlanner
+        );
+        StatementHandler ifStatementHandler = new IfStatementHandler();
+        StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(
+                List.of(expressionStatementHandler, ifStatementHandler)
+        );
+
+        AstPathEngine engine = new AstPathEngine(
+                List.of(payloadHandler),
+                context,
+                new VisitedKeyFactory(),
+                new AnalysisTrace()
+        );
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { if (order.getType() != null) { } }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type"), paths);
+    }
 }

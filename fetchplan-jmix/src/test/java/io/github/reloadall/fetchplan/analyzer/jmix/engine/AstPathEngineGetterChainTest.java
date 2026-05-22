@@ -98,6 +98,34 @@ class AstPathEngineGetterChainTest {
         assertEquals(Set.of("type", "type.code"), paths);
     }
 
+    @Test
+    void assignmentOnlyAssociationAccessEmitsLeafPath() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { Type type = order.getType(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type"), paths);
+    }
+
+    @Test
+    void assignmentOnlyAssociationPlusDeeperAccessKeepsOnlyLeafPath() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { Type type = order.getType(); type.getCode(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type.code"), paths);
+    }
+
     private AstPathEngine createEngine() {
         InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
         when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());

@@ -43,6 +43,15 @@ public class ReturnRebindingFixtureService {
         castedAddress.getCity();
     }
 
+    public void returnedAssociationWithoutDeeperCallerAccess(Document document) {
+        Address address = resolveShippingAddress(document);
+    }
+
+    public void returnedAssociationWithDeeperCallerAccess(Document document) {
+        Address address = resolveShippingAddress(document);
+        address.getCity();
+    }
+
     Address resolveShippingAddress(Document document) {
         return document.getShippingAddress();
     }

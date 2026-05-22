@@ -360,7 +360,7 @@ Status values used below:
 
 ## ISSUE-013 — Object-reference terminal usage policy is undefined
 
-- Status: `OPEN`
+- Status: `RESOLVED`
 - Area: canonical semantics / terminal usage policy
 - Found during: ISSUE-009 return rebinding cleanup
 - Summary:
@@ -373,16 +373,22 @@ Status values used below:
   - a structural/intermediate anchor used only to continue analysis;
   - a real terminal usage of an entity reference;
   - a case that should be reported as uncertain.
-- Current action:
-  `ReturnRebindingCanonicalOutputTest.returnedObjectUsedWithoutGetterNeedsExplicitPolicyBeforeAssertion()`
-  remains disabled until this policy is explicitly decided.
-- Candidate policy options:
-  1. Emit the parent path, e.g. `shippingAddress`.
-  2. Emit no path unless a deeper property is accessed.
-  3. Report uncertainty.
-  4. Make behavior context-dependent, but only if the distinction can be made reliably.
-- Recommended next step:
-  Collect 2–3 realistic examples from project code before deciding the policy.
+- Resolution:
+  Defined and implemented the policy as follows:
+  1. if an association/reference getter is accessed and no deeper entity field is emitted from it, emit the association as a valid leaf path;
+  2. if the same association is used only as a structural anchor for deeper access, suppress the structural parent and emit only deeper leaf paths;
+  3. explicit standalone getter usage remains terminal and may coexist with deeper leaf usage;
+  4. the same behavior now applies to simple interprocedural return rebinding and null-check style association access.
+- Implementation note:
+  This was implemented in canonical normalization/flattening semantics, not by blindly marking assignment initializers as `TERMINAL`.
+- Regression coverage added:
+  - direct assignment-only association access;
+  - direct assignment plus deeper access;
+  - explicit standalone plus deeper access;
+  - interproc return without deeper caller access;
+  - interproc return with deeper caller access;
+  - null-check association access;
+  - raw normalization guard that prevents uncertain/deeper-unknown descendants from being silently collapsed into a certain parent leaf.
 
 ---
 
