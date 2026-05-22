@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import io.github.reloadall.fetchplan.analyzer.jmix.compare.PathComparator;
 import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MethodCallExpressionHandler;
@@ -16,7 +15,6 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.UnknownBreakPol
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.statement.ExpressionStatementHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.statement.StatementHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.visited.VisitedKeyFactory;
-import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocCallPlan;
 import io.github.reloadall.fetchplan.analyzer.jmix.interproc.InterprocCallPlanner;
 import io.github.reloadall.fetchplan.analyzer.jmix.normalize.RawTreeNormalizer;
 import io.github.reloadall.fetchplan.analyzer.jmix.path.PathTreeFlattener;
@@ -32,6 +30,103 @@ class AstPathEngineGetterChainTest {
 
     @Test
     void extractsGetterChainIntoCanonicalPathThroughEngine() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { order.getType().getCode(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type.code"), paths);
+    }
+
+    @Test
+    void keepsStandaloneGetterCallAsTerminalCanonicalPathThroughEngine() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { order.getType(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type"), paths);
+    }
+
+    @Test
+    void keepsStandaloneGetterAndLeafWhenBothUsagesExist() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { order.getType(); order.getType().getCode(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type", "type.code"), paths);
+    }
+
+    @Test
+    void aliasUsedOnlyForLeafDoesNotEmitParentPath() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { Type type = order.getType(); type.getCode(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type.code"), paths);
+    }
+
+    @Test
+    void aliasLeafPlusExplicitStandaloneGetterKeepsParentAndLeaf() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { Type type = order.getType(); order.getType(); type.getCode(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type", "type.code"), paths);
+    }
+
+    @Test
+    void assignmentOnlyAssociationAccessEmitsLeafPath() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { Type type = order.getType(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type"), paths);
+    }
+
+    @Test
+    void assignmentOnlyAssociationPlusDeeperAccessKeepsOnlyLeafPath() {
+        AstPathEngine engine = createEngine();
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { Type type = order.getType(); type.getCode(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("type.code"), paths);
+    }
+
+    private AstPathEngine createEngine() {
         InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
         when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());
         when(interprocCallPlanner.planValueCall(any(), any(), any(), any(), any())).thenReturn(Optional.empty());
@@ -47,20 +142,11 @@ class AstPathEngineGetterChainTest {
         );
         StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(List.of(expressionStatementHandler));
 
-        AstPathEngine engine = new AstPathEngine(
+        return new AstPathEngine(
                 List.of(payloadHandler),
                 context,
                 new VisitedKeyFactory(),
                 new AnalysisTrace()
         );
-
-        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
-                "void sample(Order order) { order.getType().getCode(); }"
-        );
-
-        RawTree rawTree = engine.analyze(method, "order");
-        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
-
-        assertEquals(Set.of("type.code"), paths);
     }
 }

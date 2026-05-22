@@ -142,6 +142,13 @@ public class InterprocCallPlanner {
         StatementsPayload targetPayload = StatementsPayload.from(targetInvocation.targetMethod)
                 .withContinuationOnFinish(returnToCaller);
 
+        // Contract for value-call planning:
+        // 1) eagerly resolve the callee return value so the caller variable can be rebound before
+        //    caller-side continuation (e.g. `Address address = helper(document); address.getCity();`);
+        // 2) still traverse the callee body because helper-side expression statements may carry
+        //    meaningful usage paths (side effects / helper-body reads) that must remain observable;
+        // 3) callee traversal must not reclassify the eagerly rebound return anchor as a standalone
+        //    terminal path when the caller continues from that returned entity.
         Continuation targetMethodContinuation = new Continuation(
                 targetInvocation.targetMethod,
                 targetPayload,
@@ -322,6 +329,14 @@ public class InterprocCallPlanner {
     }
 
     private RawNode resolveEntryAnchor(Map<String, ValueBinding> targetBindings, RawNode fallback) {
+        long nonEmptyBindings = targetBindings.values().stream()
+                .filter(binding -> binding != null && !binding.isEmpty())
+                .count();
+
+        if (nonEmptyBindings > 1) {
+            return fallback;
+        }
+
         for (ValueBinding binding : targetBindings.values()) {
             if (!binding.isEmpty()) {
                 return binding.getNodes().iterator().next();

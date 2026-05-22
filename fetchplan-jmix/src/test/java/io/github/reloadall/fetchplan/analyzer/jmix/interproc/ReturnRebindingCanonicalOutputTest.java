@@ -67,6 +67,30 @@ class ReturnRebindingCanonicalOutputTest {
     }
 
     @Test
+    void valueCallReturnRebindingShouldNotUseSideEffectsAsReturnedValue() {
+        assertEquals(
+                Set.of("type.code"),
+                analyzePaths("valueCallReturnRebindingShouldNotUseSideEffectsAsReturnedValue")
+        );
+    }
+
+    @Test
+    void valueCallReturnRebindingShouldUseActualReturnedValue() {
+        assertEquals(
+                Set.of("shippingAddress.city"),
+                analyzePaths("valueCallReturnRebindingShouldUseActualReturnedValue")
+        );
+    }
+
+    @Test
+    void valueCallReturnRebindingShouldPreserveSideEffectsAndReturnedLeaf() {
+        assertEquals(
+                Set.of("type.code", "shippingAddress.city"),
+                analyzePaths("valueCallReturnRebindingShouldPreserveSideEffectsAndReturnedLeaf")
+        );
+    }
+
+    @Test
     void castContinuationKeepsOnlyLeafCanonicalPath() {
         assertEquals(
                 Set.of("shippingAddress.city"),
@@ -75,12 +99,19 @@ class ReturnRebindingCanonicalOutputTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Disabled("ISSUE-013: object-reference terminal usage policy is not defined yet")
-    void returnedObjectUsedWithoutGetterNeedsExplicitPolicyBeforeAssertion() {
-        // Policy placeholder only.
-        // This is not a broken regression test: it stays disabled until the project
-        // explicitly decides whether obtaining/binding/returning an entity reference
-        // without deeper property access should emit a parent path, no path, or uncertainty.
+    void interprocReturnWithoutDeeperCallerAccessEmitsAssociationLeaf() {
+        assertEquals(
+                Set.of("shippingAddress"),
+                analyzePaths("returnedAssociationWithoutDeeperCallerAccess")
+        );
+    }
+
+    @Test
+    void interprocReturnWithDeeperCallerAccessKeepsOnlyLeafPath() {
+        assertEquals(
+                Set.of("shippingAddress.city"),
+                analyzePaths("returnedAssociationWithDeeperCallerAccess")
+        );
     }
 
     private Set<String> analyzePaths(String methodName) {

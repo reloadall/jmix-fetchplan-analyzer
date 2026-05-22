@@ -27,7 +27,6 @@ public class ExpressionResolver {
             return ExpressionResolutionResult.empty();
         }
 
-        ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
         boolean supportedByAny = false;
 
         for (ExpressionHandler handler : expressionHandlers) {
@@ -44,16 +43,20 @@ public class ExpressionResolver {
                     context
             );
 
+            // Resolution strategy is intentionally order-sensitive.
+            // The first handler that produces a meaningful result wins:
+            // - non-empty result; or
+            // - uncertain result.
+            //
+            // This resolver does not aggregate results from later compatible handlers.
+            // Any broader merge semantics must be introduced explicitly and backed by
+            // dedicated tests, because handler order is observable analyzer behavior.
             if (!result.isEmpty() || result.isUncertain()) {
-                merged = merged.merge(result);
-
-                // Для большинства кейсов можно возвращать сразу первый осмысленный результат.
-                // Но merge оставлен, чтобы не потерять union-compatible handlers.
-                return merged;
+                return result;
             }
         }
 
-        return supportedByAny ? merged : ExpressionResolutionResult.empty();
+        return ExpressionResolutionResult.empty();
     }
 
     public RawNode resolve(RawTree rawTree,

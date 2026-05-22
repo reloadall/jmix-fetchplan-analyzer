@@ -66,4 +66,78 @@ class AstPathEngineForEachTest {
 
         assertEquals(Set.of("lines.productCode"), paths);
     }
+
+    @Test
+    void keepsStandaloneCollectionGetterAsTerminalPath() {
+        InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
+        when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(interprocCallPlanner.planValueCall(any(), any(), any(), any(), any())).thenReturn(Optional.empty());
+
+        NameExpressionHandler nameHandler = new NameExpressionHandler();
+        MethodCallExpressionHandler methodCallHandler = new MethodCallExpressionHandler();
+        ExpressionResolver expressionResolver = new ExpressionResolver(List.of(nameHandler, methodCallHandler));
+        EngineContext context = new EngineContext(expressionResolver);
+
+        StatementHandler expressionStatementHandler = new ExpressionStatementHandler(
+                new UnknownBreakPolicy(),
+                interprocCallPlanner
+        );
+        StatementHandler forEachStatementHandler = new ForEachStatementHandler(mock(InterprocMethodResolver.class));
+        StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(
+                List.of(expressionStatementHandler, forEachStatementHandler)
+        );
+
+        AstPathEngine engine = new AstPathEngine(
+                List.of(payloadHandler),
+                context,
+                new VisitedKeyFactory(),
+                new AnalysisTrace()
+        );
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { order.getLines(); }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("lines"), paths);
+    }
+
+    @Test
+    void keepsStandaloneCollectionGetterAndLeafWhenBothUsagesExist() {
+        InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
+        when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(interprocCallPlanner.planValueCall(any(), any(), any(), any(), any())).thenReturn(Optional.empty());
+
+        NameExpressionHandler nameHandler = new NameExpressionHandler();
+        MethodCallExpressionHandler methodCallHandler = new MethodCallExpressionHandler();
+        ExpressionResolver expressionResolver = new ExpressionResolver(List.of(nameHandler, methodCallHandler));
+        EngineContext context = new EngineContext(expressionResolver);
+
+        StatementHandler expressionStatementHandler = new ExpressionStatementHandler(
+                new UnknownBreakPolicy(),
+                interprocCallPlanner
+        );
+        StatementHandler forEachStatementHandler = new ForEachStatementHandler(mock(InterprocMethodResolver.class));
+        StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(
+                List.of(expressionStatementHandler, forEachStatementHandler)
+        );
+
+        AstPathEngine engine = new AstPathEngine(
+                List.of(payloadHandler),
+                context,
+                new VisitedKeyFactory(),
+                new AnalysisTrace()
+        );
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Order order) { order.getLines(); for (Line line : order.getLines()) { line.getProductCode(); } }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "order");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("lines", "lines.productCode"), paths);
+    }
 }

@@ -30,6 +30,10 @@ public class NameExpressionHandler implements ExpressionHandler {
             return ExpressionResolutionResult.empty();
         }
 
+        if (binding.isTerminalOnly()) {
+            return ExpressionResolutionResult.empty();
+        }
+
         return new ExpressionResolutionResult(
                 binding.getNodes(),
                 binding.isUncertain()

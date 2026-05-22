@@ -11,6 +11,7 @@ import com.github.javaparser.ast.expr.CastExpr;
 import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
@@ -269,20 +270,51 @@ public class ExpressionStatementHandler implements StatementHandler {
             return StatementHandleResult.customContinuations(fanOutPlan.get().getTargetMethodContinuations());
         }
 
-        ExpressionResolutionResult callResult = context.getExpressionResolver().resolveAll(rawTree, step, expr, context);
-        markTerminal(callResult);
-
-        for (Expression argument : expr.getArguments()) {
-            ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
-                    rawTree,
-                    step,
-                    argument,
-                    context
-            );
-            markTerminal(argumentResult);
-        }
+        markTerminalUsages(rawTree, step, expr, context);
 
         return StatementHandleResult.continueLinear();
+    }
+
+    private void markTerminalUsages(RawTree rawTree,
+                                    AnalysisStep step,
+                                    Expression expression,
+                                    EngineContext context) {
+        if (expression == null) {
+            return;
+        }
+
+        ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                expression,
+                context
+        );
+        markTerminal(result);
+
+        if (expression.isMethodCallExpr()) {
+            MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
+            for (Expression argument : methodCallExpr.getArguments()) {
+                markTerminalUsages(rawTree, step, argument, context);
+            }
+            return;
+        }
+
+        if (expression.isCastExpr()) {
+            markTerminalUsages(rawTree, step, expression.asCastExpr().getExpression(), context);
+            return;
+        }
+
+        if (expression.isEnclosedExpr()) {
+            markTerminalUsages(rawTree, step, expression.asEnclosedExpr().getInner(), context);
+            return;
+        }
+
+        if (expression.isObjectCreationExpr()) {
+            ObjectCreationExpr objectCreationExpr = expression.asObjectCreationExpr();
+            for (Expression argument : objectCreationExpr.getArguments()) {
+                markTerminalUsages(rawTree, step, argument, context);
+            }
+        }
     }
 
     private void markTerminal(ExpressionResolutionResult result) {

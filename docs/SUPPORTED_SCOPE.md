@@ -21,11 +21,15 @@
 
 - same-class method calls
 - `this.someMethod(...)`
+- narrow inherited protected helper call on superclass chain for unqualified calls from the concrete subclass method
 - simple interface-based bean call when implementation can be resolved unambiguously
 - narrow foreach fan-out for collection-injected Spring worker beans via `List<T>` / `Collection<T>` / `Iterable<T>` when loop variable directly scopes a method call and all implementations are resolved
 - value-call in initializer/assignment
 - return-based rebinding in simple cases
 - recursion guard
+- root-entity getter reads inside top-level method-call arguments, including narrow wrapper/pass-through argument shapes such as
+  `IdLike.of(document.getContract())`, when the relevant fetch-plan usage is the pre-boundary reference anchor rather than
+  repository/result internals
 
 ### Output layers
 
@@ -108,6 +112,16 @@ Currently covered by scenario integration:
 - narrow collection-injected worker fan-out via `inspectDocumentWithWorkers(Document document)` for:
   `for (Worker worker : workers) { worker.process(document); }`
   where `workers` is `List<T>` / `Collection<T>` / `Iterable<T>` and Spring bean implementations are resolved.
+- root getter reads inside method-call arguments via
+  `DocumentScenarioService.inspectDocumentWithGetterArguments(Document document)`
+  where canonical output keeps pre-boundary reads such as `dateStart`, `dateFinish`, `contract`, and `currency`
+  without leaking `contract.id` / `currency.id` or paths from newly created return values.
+  This supported shape is intentionally narrow: it applies to unsupported/external boundary calls that are not analyzed
+  interprocedurally, and must not be read as a rule to mark every argument anchor of normal interprocedural calls as terminal.
+- forwarded root-derived helper parameters into unsupported repository/external boundary via
+  `DocumentScenarioService.inspectDocumentWithForwardedRepositoryArguments(Document document)`
+  where a private helper receives root-derived scalar/reference values and then forwards them into a boundary call with no
+  analyzable body; source-side root paths are preserved as final pre-boundary usages.
 - Lombok-style constructor-injected single-bean interprocedural call via
   `SyntheticLombokScenarioService.inspectDocumentWithLombokServiceCall(RootDocument document)`
   where a `private final` service field declared in source is used to call another service method and
@@ -124,6 +138,10 @@ Currently covered by scenario integration:
   `SyntheticLombokScenarioService.inspectLineWithNegativeTypeGuardAndCast(BaseLine line)`
   where a negative boolean helper guard causes early return, and subtype-specific extraction still relies on the
   explicit cast that follows the guard.
+- inherited protected converter-helper call via
+  `SyntheticDocumentConverter.createDto(RootDocument document)`
+  where a concrete subclass calls `createParams(document)` without explicit scope and the helper body is declared in
+  abstract superclass `SyntheticBaseConverter<RootDocument>`.
 
 Still not scenario-covered as supported generalized worker dispatch:
 
@@ -134,8 +152,15 @@ Important note:
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the minimal chained method-reference pattern are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
-- structural parent/container paths with deeper analyzed descendants are treated as containers, not as standalone analyzed
-  terminal paths; they should not inflate `Covered`, and hierarchical coverage is not a separate report concept yet.
+- structural parent/container paths are not emitted merely because deeper descendants exist.
+  They are emitted only when the parent property itself was actually accessed under the current policy.
+  Real metadata-backed property access events such as `doc.getContract()` or `doc.getType()` therefore remain analyzed
+  paths even when deeper property reads also exist.
+- association/reference getter access now follows an explicit leaf policy:
+  - a metadata-backed association accessed without deeper analyzed descendant usage is emitted as a valid leaf path;
+  - if the same association is used only as an intermediate anchor for deeper access, only deeper leaf paths are emitted;
+  - explicit standalone getter usage remains terminal and may coexist with deeper leaf usage;
+  - the same rule applies to simple interprocedural return rebinding and null-check style association access.
 
 Do not treat it as:
 - a proof engine for arbitrary Java

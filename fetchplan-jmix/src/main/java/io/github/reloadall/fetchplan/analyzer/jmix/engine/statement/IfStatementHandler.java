@@ -132,7 +132,15 @@ public class IfStatementHandler implements StatementHandler {
             BinaryExpr binaryExpr = operand.asBinaryExpr();
             markBinaryOperandUsage(rawTree, step, binaryExpr.getLeft(), context);
             markBinaryOperandUsage(rawTree, step, binaryExpr.getRight(), context);
+            return;
         }
+
+        context.getExpressionResolver().resolveAll(
+                rawTree,
+                step,
+                operand,
+                context
+        );
     }
 
     private void markResolvedNodesTerminal(RawTree rawTree,

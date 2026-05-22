@@ -1,5 +1,6 @@
 package io.github.reloadall.fetchplan.analyzer.scenario.document.entity;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +36,16 @@ public class Document {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CONTRACT_ID")
     private Contract contract;
+
+    @Column(name = "DATE_START")
+    private LocalDate dateStart;
+
+    @Column(name = "DATE_FINISH")
+    private LocalDate dateFinish;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CURRENCY_ID")
+    private Currency currency;
 
     @Composition
     @OneToMany(mappedBy = "document")
@@ -74,6 +85,30 @@ public class Document {
 
     public void setContract(Contract contract) {
         this.contract = contract;
+    }
+
+    public LocalDate getDateStart() {
+        return dateStart;
+    }
+
+    public void setDateStart(LocalDate dateStart) {
+        this.dateStart = dateStart;
+    }
+
+    public LocalDate getDateFinish() {
+        return dateFinish;
+    }
+
+    public void setDateFinish(LocalDate dateFinish) {
+        this.dateFinish = dateFinish;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        this.currency = currency;
     }
 
     public List<DocumentLine> getLines() {
