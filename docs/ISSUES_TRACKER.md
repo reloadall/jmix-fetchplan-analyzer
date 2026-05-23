@@ -875,7 +875,7 @@ Status values used below:
 
 ## ISSUE-030 — Boundary/query return incorrectly inherits origins from filter arguments
 
-- Status: `OPEN`
+- Status: `RESOLVED`
 - Area: interprocedural return-origin analysis / boundary-query calls / value-call rebinding
 - Found during: focused regression for `fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins(FullChainAct act)`
 - Summary:
@@ -935,6 +935,10 @@ Status values used below:
   - `planValueCall(...)` receives those filter-argument usage nodes as `returnResult` and binds the caller variable
     `paymentTransactions` to them;
   - subsequent `generatePayments(paymentTransactions, act)` expands `Transaction` reads under the filter argument paths.
-- Current action:
-  Keep the failing regression in place and do not make it pass until return-origin analysis is separated from
-  boundary-argument usage preservation.
+- Resolution:
+  Separated return-origin analysis from boundary-argument usage preservation in
+  `InterprocReturnResolver.handleReturnStatement(...)`. Directly resolved return expressions still produce return origins,
+  so valid rebinding such as `return document.getShippingAddress()` remains supported. When a return expression cannot be
+  resolved as a real origin and only boundary/query arguments can be collected, those argument paths are now preserved as
+  side effects, not returned as `returnValues`. This prevents `InterprocCallPlanner.planValueCall(...)` from binding caller
+  result variables such as `paymentTransactions` to filter arguments like `dateStart`, `contract`, or `currency`.

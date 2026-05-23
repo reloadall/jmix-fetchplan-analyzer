@@ -100,9 +100,9 @@ public class InterprocReturnResolver {
             }
 
             if (statement.isReturnStmt()) {
-                returnValues = returnValues.merge(
-                        handleReturnStatement(rawTree, step, statement.asReturnStmt(), context)
-                );
+                ReturnWalkResult nested = handleReturnStatement(rawTree, step, statement.asReturnStmt(), context);
+                returnValues = returnValues.merge(nested.returnValues());
+                sideEffects = sideEffects.merge(nested.sideEffects());
                 continue;
             }
 
@@ -306,23 +306,26 @@ public class InterprocReturnResolver {
         return ExpressionResolutionResult.empty();
     }
 
-    private ExpressionResolutionResult handleReturnStatement(RawTree rawTree,
-                                                             AnalysisStep step,
-                                                             ReturnStmt returnStmt,
-                                                             EngineContext context) {
+    private ReturnWalkResult handleReturnStatement(RawTree rawTree,
+                                                   AnalysisStep step,
+                                                   ReturnStmt returnStmt,
+                                                   EngineContext context) {
         if (returnStmt.getExpression().isEmpty()) {
-            return ExpressionResolutionResult.empty();
+            return new ReturnWalkResult(ExpressionResolutionResult.empty(), ExpressionResolutionResult.empty());
         }
 
         Expression expression = returnStmt.getExpression().get();
 
         if (expression.isNullLiteralExpr()) {
             analysisTrace.log("INTERPROC: return resolver ignored return null");
-            return ExpressionResolutionResult.empty();
+            return new ReturnWalkResult(ExpressionResolutionResult.empty(), ExpressionResolutionResult.empty());
         }
 
         if (expression.isBinaryExpr()) {
-            return handleBinaryReturnExpression(rawTree, step, expression.asBinaryExpr(), context);
+            return new ReturnWalkResult(
+                    handleBinaryReturnExpression(rawTree, step, expression.asBinaryExpr(), context),
+                    ExpressionResolutionResult.empty()
+            );
         }
 
         ExpressionResolutionResult result = context.getExpressionResolver().resolveAll(
@@ -333,15 +336,18 @@ public class InterprocReturnResolver {
         );
 
         if (result.isEmpty()) {
-            result = collectBoundaryArgumentUsages(rawTree, step, expression, context);
+            ExpressionResolutionResult boundaryUsages = collectBoundaryArgumentUsages(rawTree, step, expression, context);
+            if (!boundaryUsages.isEmpty()) {
+                analysisTrace.log("INTERPROC: return resolver preserved boundary return argument usages as side effects -> nodes="
+                        + boundaryUsages.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
+            }
+            return new ReturnWalkResult(ExpressionResolutionResult.empty(), boundaryUsages);
         }
 
-        if (!result.isEmpty()) {
-            analysisTrace.log("INTERPROC: return resolver resolved return -> nodes="
-                    + result.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
-        }
+        analysisTrace.log("INTERPROC: return resolver resolved return -> nodes="
+                + result.getNodes().stream().map(node -> String.valueOf(node.getId())).toList());
 
-        return result;
+        return new ReturnWalkResult(result, ExpressionResolutionResult.empty());
     }
 
     private ExpressionResolutionResult handleBinaryReturnExpression(RawTree rawTree,
