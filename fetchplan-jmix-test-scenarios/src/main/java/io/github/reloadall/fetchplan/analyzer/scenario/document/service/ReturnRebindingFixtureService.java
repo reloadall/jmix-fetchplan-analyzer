@@ -1,11 +1,14 @@
 package io.github.reloadall.fetchplan.analyzer.scenario.document.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Address;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Contract;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Currency;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
 import org.springframework.stereotype.Service;
 
@@ -72,6 +75,15 @@ public class ReturnRebindingFixtureService {
         totals.keySet();
     }
 
+    public void scalarArgumentsMustNotBecomePathAnchors(Document document) {
+        findPaymentTransactions(
+                document.getDateStart(),
+                document.getDateFinish(),
+                Id.of(document.getContract()),
+                Id.of(document.getCurrency())
+        );
+    }
+
     Address resolveShippingAddress(Document document) {
         return document.getShippingAddress();
     }
@@ -106,6 +118,17 @@ public class ReturnRebindingFixtureService {
             result.put(key, currentSum.add(line.getCost()));
         }
         return result;
+    }
+
+    private List<Transaction> findPaymentTransactions(LocalDate dateStart,
+                                                      LocalDate dateFinish,
+                                                      Id<Contract> contractId,
+                                                      Id<Currency> currencyId) {
+        String.valueOf(dateStart);
+        String.valueOf(dateFinish);
+        String.valueOf(contractId);
+        String.valueOf(currencyId);
+        return List.of();
     }
 
     public static class GroupingAct {
@@ -170,6 +193,24 @@ public class ReturnRebindingFixtureService {
 
     public static class GroupingKey {
         public GroupingKey(BigDecimal rate, String nomenclature, String type) {
+        }
+    }
+
+    public static class Id<T> {
+        public static <T> Id<T> of(T value) {
+            return new Id<>();
+        }
+    }
+    public static class Transaction {
+        private String docLine;
+        private BigDecimal cost;
+
+        public String getDocLine() {
+            return docLine;
+        }
+
+        public BigDecimal getCost() {
+            return cost;
         }
     }
 }

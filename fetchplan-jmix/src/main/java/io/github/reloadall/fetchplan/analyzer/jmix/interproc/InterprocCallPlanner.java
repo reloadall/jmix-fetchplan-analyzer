@@ -332,7 +332,7 @@ public class InterprocCallPlanner {
 
     private RawNode resolveEntryAnchor(Map<String, ValueBinding> targetBindings, RawNode fallback) {
         long nonEmptyBindings = targetBindings.values().stream()
-                .filter(binding -> binding != null && !binding.isEmpty())
+                .filter(binding -> binding != null && !binding.isEmpty() && !binding.isTerminalOnly())
                 .count();
 
         if (nonEmptyBindings > 1) {
@@ -340,7 +340,7 @@ public class InterprocCallPlanner {
         }
 
         for (ValueBinding binding : targetBindings.values()) {
-            if (!binding.isEmpty()) {
+            if (!binding.isEmpty() && !binding.isTerminalOnly()) {
                 return binding.getNodes().iterator().next();
             }
         }

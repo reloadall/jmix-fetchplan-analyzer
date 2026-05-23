@@ -153,6 +153,19 @@ class ReturnRebindingCanonicalOutputTest {
         );
     }
 
+    @Test
+    void scalarArgumentsMustNotBecomePathAnchors() {
+        assertEquals(
+                Set.of(
+                        "dateStart",
+                        "dateFinish",
+                        "contract",
+                        "currency"
+                ),
+                analyzePaths("scalarArgumentsMustNotBecomePathAnchors")
+        );
+    }
+
     private Set<String> analyzePaths(String methodName) {
         return analyzePaths(methodName, "document", Document.class.getName());
     }
