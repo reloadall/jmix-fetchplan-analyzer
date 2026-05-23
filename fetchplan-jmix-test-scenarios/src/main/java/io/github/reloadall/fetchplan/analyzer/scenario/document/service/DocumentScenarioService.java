@@ -18,6 +18,7 @@ public class DocumentScenarioService {
     private final LineReadService lineReadService;
     private final RecordRepository recordRepository;
     private final List<DocumentWorker> workers;
+    private UnresolvedDocumentWorker unresolvedWorker;
 
     @Autowired
     public DocumentScenarioService(DocumentTypeReadService documentTypeReadService,
@@ -112,6 +113,10 @@ public class DocumentScenarioService {
         for (DocumentWorker worker : workers) {
             worker.process(document);
         }
+    }
+
+    public void inspectDocumentWithUnresolvedWorker(Document document) {
+        unresolvedWorker.process(document.getContract());
     }
 
     public void inspectDocumentWithGetterArguments(Document document) {

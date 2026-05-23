@@ -66,6 +66,7 @@ import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -200,6 +201,24 @@ class DocumentScenarioIntegrationTest {
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_WORKERS_LEAF_PATHS
         );
+    }
+
+    @Test
+    void unresolvedWorkerCallWithPathArgumentReportsUncertainty() {
+        ScenarioResult result = analyzeScenario(
+                "inspectDocumentWithUnresolvedWorker",
+                Set.of("contract"),
+                Set.of("contract")
+        );
+
+        assertEquals(Set.of("contract"), result.analyzedPaths(), result.trace());
+        assertFalse(result.rawUncertainPaths().isEmpty(), result.trace());
+        assertTrue(
+                result.rawUncertainPaths().contains("contract")
+                        || result.rawUncertainPaths().contains("<root>"),
+                result.trace()
+        );
+        assertFalse(result.comparisonResult().getUncertainPaths().isEmpty(), result.trace());
     }
 
     @Test
