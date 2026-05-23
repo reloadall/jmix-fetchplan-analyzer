@@ -60,6 +60,11 @@ public class ReturnRebindingFixtureService {
         address.getCity();
     }
 
+    public void returnedParameterShouldRebindExplicitOrigin(Document document) {
+        Address address = sameAddress(document.getShippingAddress());
+        address.getCity();
+    }
+
     public void helperBodyReadsShouldBePreservedForNonRebindableValueCall(GroupingAct act) {
         List<? extends GroupingLine> liabilityLines = act.getLiabilityLines();
         List<? extends GroupingLine> paymentLines = act.getPaymentLines();
@@ -128,6 +133,10 @@ public class ReturnRebindingFixtureService {
     Address helperWithSideEffectAndReturn(Document document) {
         document.getType().getCode();
         return document.getShippingAddress();
+    }
+
+    private Address sameAddress(Address address) {
+        return address;
     }
 
     private Map<GroupingKey, BigDecimal> groupTotals(List<? extends GroupingLine> lines) {

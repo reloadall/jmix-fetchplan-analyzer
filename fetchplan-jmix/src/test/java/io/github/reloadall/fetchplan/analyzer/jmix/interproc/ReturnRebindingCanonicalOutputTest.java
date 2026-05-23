@@ -118,6 +118,14 @@ class ReturnRebindingCanonicalOutputTest {
     }
 
     @Test
+    void returnedParameterShouldRebindExplicitOrigin() {
+        assertEquals(
+                Set.of("shippingAddress.city"),
+                analyzePaths("returnedParameterShouldRebindExplicitOrigin")
+        );
+    }
+
+    @Test
     void helperBodyReadsShouldBePreservedForNonRebindableValueCall() {
         assertEquals(
                 Set.of(
