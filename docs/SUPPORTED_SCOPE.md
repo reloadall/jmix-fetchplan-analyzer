@@ -33,6 +33,8 @@
 - root-entity getter reads inside top-level method-call arguments, including narrow wrapper/pass-through argument shapes such as
   `IdLike.of(document.getContract())`, when the relevant fetch-plan usage is the pre-boundary reference anchor rather than
   repository/result internals
+- unresolved path-relevant `void` interface/service calls are surfaced as uncertainty when the target declaration is found
+  but has no analyzable body, with `UNKNOWN_BREAK` attached to resolved argument path anchors where possible
 
 ### Output layers
 
@@ -115,6 +117,9 @@ Currently covered by scenario integration:
 - narrow collection-injected worker fan-out via `inspectDocumentWithWorkers(Document document)` for:
   `for (Worker worker : workers) { worker.process(document); }`
   where `workers` is `List<T>` / `Collection<T>` / `Iterable<T>` and Spring bean implementations are resolved.
+- unresolved worker/service call uncertainty via `inspectDocumentWithUnresolvedWorker(Document document)`, where an
+  interface method with no resolved implementation/body receives a path-relevant argument such as `document.getContract()`;
+  the analyzer keeps `contract` as an analyzed path and reports the call as uncertain instead of treating it as clean.
 - root getter reads inside method-call arguments via
   `DocumentScenarioService.inspectDocumentWithGetterArguments(Document document)`
   where canonical output keeps pre-boundary reads such as `dateStart`, `dateFinish`, `contract`, and `currency`

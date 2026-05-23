@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.debug.AnalysisTrace;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
@@ -248,6 +249,44 @@ public class InterprocCallPlanner {
         }
 
         return Optional.of(new InterprocCallPlan(continuations));
+    }
+
+    public boolean markUnresolvedPathRelevantCallIfNeeded(RawTree rawTree,
+                                                          AnalysisStep step,
+                                                          MethodCallExpr methodCallExpr,
+                                                          EngineContext context) {
+        Optional<MethodDeclaration> targetMethodOpt = interprocMethodResolver.resolve(methodCallExpr, step);
+        if (targetMethodOpt.isEmpty() || targetMethodOpt.get().getBody().isPresent()) {
+            return false;
+        }
+
+        MethodDeclaration targetMethod = targetMethodOpt.get();
+        if (!targetMethod.getType().isVoidType()) {
+            analysisTrace.log("INTERPROC: unresolved path-relevant call not marked uncertain, target returns value: "
+                    + methodCallExpr);
+            return false;
+        }
+
+        boolean marked = false;
+        for (Expression argument : methodCallExpr.getArguments()) {
+            ExpressionResolutionResult argumentResult = context.getExpressionResolver().resolveAll(
+                    rawTree,
+                    step,
+                    argument,
+                    context
+            );
+
+            for (RawNode argumentNode : argumentResult.getNodes()) {
+                rawTree.addUnknownBreak(argumentNode, methodCallExpr.getNameAsString(), UsageKind.INTERMEDIATE);
+                marked = true;
+            }
+        }
+
+        if (marked) {
+            analysisTrace.log("INTERPROC: unresolved path-relevant call marked uncertain: " + methodCallExpr);
+        }
+
+        return marked;
     }
 
     private Optional<List<TargetInvocation>> resolveFanOutTargetInvocations(RawTree rawTree,

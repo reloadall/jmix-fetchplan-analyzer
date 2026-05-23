@@ -962,3 +962,26 @@ Status values used below:
   No production cleanup is currently justified solely by the ISSUE-030 fix. Some scalar-like condition handling may be a
   separate future cleanup candidate, but it should only be changed with a concrete regression target because it protects
   existing condition/body-read scenarios from structural parent noise.
+
+---
+
+## ISSUE-031 — Unresolved path-relevant interprocedural calls could look clean
+
+- Status: `RESOLVED`
+- Area: interprocedural call planning / uncertainty reporting
+- Found during: scenario regression for `DocumentScenarioService.inspectDocumentWithUnresolvedWorker(Document document)`
+- Summary:
+  A top-level call to an unresolved interface/service method could contain a path-relevant argument such as
+  `document.getContract()`, preserve that argument as an analyzed path, and still report no uncertainty when no target body
+  or implementation was available.
+- Evidence:
+  `unresolvedWorker.process(document.getContract())` produced analyzed path `contract`, while `rawUncertainPaths` and
+  `comparisonResult.uncertainPaths` were empty. Trace showed no Spring bean candidates and skipped interproc because the
+  target method had no body.
+- Resolution:
+  Added a narrow post-planning fallback in `InterprocCallPlanner` for unresolved path-relevant `void` calls whose target
+  declaration is resolved but has no analyzable body. The fallback resolves call arguments and adds `UNKNOWN_BREAK` under
+  each resolved argument anchor, so uncertainty is tied to `contract` rather than the root when possible.
+- Guardrail:
+  The fallback currently skips value-returning unresolved calls to avoid reclassifying query/repository boundary methods
+  such as `recordRepository.find(...)` as uncertain merely because their filter arguments are path-relevant.
