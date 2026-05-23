@@ -23,6 +23,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.CastExpress
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ConditionalExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.EnclosedExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolver;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ForEachLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.InterprocMethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MapMethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MethodCallExpressionHandler;
@@ -172,6 +173,36 @@ class DocumentScenarioIntegrationTest {
 
         assertEquals(Set.of("lines"), result.analyzedPaths(), result.trace());
         assertFalse(result.analyzedPaths().contains("lines.codeAsEnum"), result.trace());
+    }
+
+    @Test
+    void analyzesCollectionForEachLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithCollectionForEachLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_COLLECTION_FOR_EACH_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_COLLECTION_FOR_EACH_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_COLLECTION_FOR_EACH_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamForEachLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamForEachLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamForEachBlockLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamForEachBlockLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA_LEAF_PATHS
+        );
     }
 
     @Test
@@ -516,6 +547,7 @@ class DocumentScenarioIntegrationTest {
                 new NameExpressionHandler(),
                 new CollectionGetExpressionHandler(),
                 new MapMethodCallExpressionHandler(),
+                new ForEachLambdaExpressionHandler(),
                 new PassThroughMethodCallExpressionHandler(new PassThroughMethodPolicy()),
                 new ConditionalExpressionHandler(),
                 new InterprocMethodCallExpressionHandler(

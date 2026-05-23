@@ -985,3 +985,22 @@ Status values used below:
 - Guardrail:
   The fallback currently skips value-returning unresolved calls to avoid reclassifying query/repository boundary methods
   such as `recordRepository.find(...)` as uncertain merely because their filter arguments are path-relevant.
+
+---
+
+## ISSUE-032 — `forEach(lambda)` over root-derived entity collections did not analyze lambda body reads
+
+- Status: `RESOLVED`
+- Area: expression handling / stream and collection lambda support
+- Found during: scenario expansion for collection/stream `forEach(lambda)` entity path extraction
+- Summary:
+  `PassThroughMethodPolicy` listed `forEach`, but the analyzer only passed through to the collection scope and did not
+  inspect the lambda body. As a result, body reads like `line.getProduct().getSku()` were not extracted from
+  `document.getLines().forEach(line -> ...)` or `document.getLines().stream().forEach(line -> ...)`.
+- Resolution:
+  Added a narrow `ForEachLambdaExpressionHandler` before the generic pass-through handler. It supports only one-parameter
+  `forEach(lambda)` calls, binds the lambda parameter to a technical `COLLECTION_ELEMENT` under resolved scope nodes, and
+  resolves expression-body or block-body expression statements as terminal entity reads.
+- Guardrail:
+  This is not general stream/lambda support. It does not implement `Map.forEach`, multi-parameter lambdas, arbitrary block
+  statements, `filter`/`flatMap` semantics, or worker dispatch such as `workers.forEach(worker -> worker.process(document))`.

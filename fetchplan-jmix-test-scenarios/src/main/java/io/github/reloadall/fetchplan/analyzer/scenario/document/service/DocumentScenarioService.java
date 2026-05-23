@@ -104,6 +104,26 @@ public class DocumentScenarioService {
                 .toList();
     }
 
+    public void inspectDocumentWithCollectionForEachLambda(Document document) {
+        document.getLines()
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamForEachLambda(Document document) {
+        document.getLines()
+                .stream()
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamForEachBlockLambda(Document document) {
+        document.getLines()
+                .stream()
+                .forEach(line -> {
+                    line.getProduct().getSku();
+                    line.getQuantity();
+                });
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
