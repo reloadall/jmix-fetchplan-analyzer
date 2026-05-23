@@ -84,6 +84,30 @@ public class ReturnRebindingFixtureService {
         );
     }
 
+    public void fullChainQueryResultMustNotInheritFilterArgumentOrigins(FullChainAct act) {
+        List<Transaction> paymentTransactions = findPaymentTransactions(
+                act.getDateStart(),
+                act.getDateFinish(),
+                Id.of(act.getContract()),
+                Id.of(act.getCurrency())
+        );
+
+        List<Payment> payments = generatePayments(paymentTransactions, act);
+        act.setPaymentLines(payments);
+    }
+
+    public void fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins(FullChainAct act) {
+        List<Transaction> paymentTransactions = findPaymentTransactionsViaBoundary(
+                act.getDateStart(),
+                act.getDateFinish(),
+                Id.of(act.getContract()),
+                Id.of(act.getCurrency())
+        );
+
+        List<Payment> payments = generatePayments(paymentTransactions, act);
+        act.setPaymentLines(payments);
+    }
+
     Address resolveShippingAddress(Document document) {
         return document.getShippingAddress();
     }
@@ -129,6 +153,76 @@ public class ReturnRebindingFixtureService {
         String.valueOf(contractId);
         String.valueOf(currencyId);
         return List.of();
+    }
+
+    private List<Transaction> findPaymentTransactionsViaBoundary(LocalDate dateStart,
+                                                                 LocalDate dateFinish,
+                                                                 Id<Contract> contractId,
+                                                                 Id<Currency> currencyId) {
+        return transactionQuery(dateStart, dateFinish, contractId, currencyId);
+    }
+
+    private List<Transaction> transactionQuery(LocalDate dateStart,
+                                               LocalDate dateFinish,
+                                               Id<Contract> contractId,
+                                               Id<Currency> currencyId) {
+        return List.of();
+    }
+
+    private List<Payment> generatePayments(List<Transaction> transactions, FullChainAct act) {
+        for (Transaction transaction : transactions) {
+            transaction.getDocLine();
+            transaction.getCost();
+        }
+        return List.of();
+    }
+
+    public static class FullChainAct {
+        private LocalDate dateStart;
+        private LocalDate dateFinish;
+        private Contract contract;
+        private Currency currency;
+        private List<Payment> paymentLines;
+
+        public LocalDate getDateStart() {
+            return dateStart;
+        }
+
+        public void setDateStart(LocalDate dateStart) {
+            this.dateStart = dateStart;
+        }
+
+        public LocalDate getDateFinish() {
+            return dateFinish;
+        }
+
+        public void setDateFinish(LocalDate dateFinish) {
+            this.dateFinish = dateFinish;
+        }
+
+        public Contract getContract() {
+            return contract;
+        }
+
+        public void setContract(Contract contract) {
+            this.contract = contract;
+        }
+
+        public Currency getCurrency() {
+            return currency;
+        }
+
+        public void setCurrency(Currency currency) {
+            this.currency = currency;
+        }
+
+        public List<Payment> getPaymentLines() {
+            return paymentLines;
+        }
+
+        public void setPaymentLines(List<Payment> paymentLines) {
+            this.paymentLines = paymentLines;
+        }
     }
 
     public static class GroupingAct {
@@ -212,5 +306,8 @@ public class ReturnRebindingFixtureService {
         public BigDecimal getCost() {
             return cost;
         }
+    }
+
+    public static class Payment {
     }
 }

@@ -870,3 +870,71 @@ Status values used below:
   This is **not** repository reload support and does not implement `dataManager.load(...)`, `Id.of(...)`, or fetch-plan
   builder semantics. It only preserves the last confirmed pre-boundary entity anchor before an unsupported reload/id
   boundary.
+
+---
+
+## ISSUE-030 — Boundary/query return incorrectly inherits origins from filter arguments
+
+- Status: `OPEN`
+- Area: interprocedural return-origin analysis / boundary-query calls / value-call rebinding
+- Found during: focused regression for `fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins(FullChainAct act)`
+- Summary:
+  A helper method that returns a boundary/query-like method call with root-derived filter arguments can incorrectly make
+  those filter arguments look like origins of the returned query result. When caller code later iterates or otherwise reads
+  the returned result, the analyzer may attach result-entity reads under filter paths such as `dateStart`, `contract`, or
+  `currency`.
+- Evidence:
+  The focused failing regression currently expects only:
+  - `dateStart`
+  - `dateFinish`
+  - `contract`
+  - `currency`
+
+  but the analyzer produces:
+  - `dateStart.docLine`
+  - `dateStart.cost`
+  - `dateStart`
+  - `dateFinish.docLine`
+  - `dateFinish.cost`
+  - `dateFinish`
+  - `contract.docLine`
+  - `contract.cost`
+  - `contract`
+  - `currency.docLine`
+  - `currency.cost`
+  - `currency`
+- Required interprocedural origin contract:
+  1. Method arguments may produce usage paths.
+     Example: `act.getDateStart()` -> `dateStart`.
+  2. Method arguments may be expandable origins inside the callee body only for usage of that exact parameter.
+     Example: `groupTotals(liabilityLines)` may emit `liabilityLines.rate` / `liabilityLines.cost` from
+     `for (Line line : lines)`.
+  3. Method arguments must not automatically become origins of the method return value.
+  4. Caller result variable rebinding is allowed only from explicit resolved return expressions rooted in caller-origin paths.
+     Example: `return document.getShippingAddress()` may rebind result to `shippingAddress`.
+  5. A return expression that is an unsupported/boundary/query call with filter arguments must not use those filter
+     arguments as return origins.
+     Example: `return transactionQuery(dateStart, dateFinish, contractId, currencyId)` must not rebind result to
+     `dateStart` / `dateFinish` / `contract` / `currency`.
+  6. If return origin is unresolved/external/query result, the caller result variable must remain unbound/external.
+  7. Later reads from that unbound/external result must not attach under filter argument paths.
+  8. Parameter usage analysis and return-origin analysis are separate concerns.
+- Audit note / likely violation point:
+  The likely violation is in `InterprocReturnResolver.handleReturnStatement(...)`. When direct return-expression resolution
+  through `context.getExpressionResolver().resolveAll(...)` is empty, it falls back to
+  `collectBoundaryArgumentUsages(...)` and returns those argument-usage nodes as the return value. That fallback is useful
+  for preserving source-side usage paths at boundary calls, but it is unsafe when the caller treats the returned
+  `ExpressionResolutionResult` as a rebindable return origin.
+
+  The problematic path is:
+  - `InterprocCallPlanner.planValueCall(...)` eagerly calls `interprocReturnResolver.resolveReturnValue(...)`;
+  - `InterprocReturnResolver.handleReturnStatement(...)` sees `return transactionQuery(dateStart, dateFinish, ...)`;
+  - `InterprocMethodCallExpressionHandler.resolveAll(...)` / direct expression resolution cannot resolve a meaningful
+    query-result origin;
+  - `handleReturnStatement(...)` falls back to `collectBoundaryArgumentUsages(...)`;
+  - `planValueCall(...)` receives those filter-argument usage nodes as `returnResult` and binds the caller variable
+    `paymentTransactions` to them;
+  - subsequent `generatePayments(paymentTransactions, act)` expands `Transaction` reads under the filter argument paths.
+- Current action:
+  Keep the failing regression in place and do not make it pass until return-origin analysis is separated from
+  boundary-argument usage preservation.

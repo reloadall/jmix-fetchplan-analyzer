@@ -125,6 +125,10 @@ Currently covered by scenario integration:
   `DocumentScenarioService.inspectDocumentWithForwardedRepositoryArguments(Document document)`
   where a private helper receives root-derived scalar/reference values and then forwards them into a boundary call with no
   analyzable body; source-side root paths are preserved as final pre-boundary usages.
+  Boundary/query return values are not considered root-derived return origins merely because their filter arguments are
+  root-derived. For example, `return transactionQuery(dateStart, dateFinish, contractId, currencyId)` may preserve the
+  filter argument usages, but the returned query result itself must remain unbound/external unless a separate supported
+  return-origin expression proves otherwise.
 - Lombok-style constructor-injected single-bean interprocedural call via
   `SyntheticLombokScenarioService.inspectDocumentWithLombokServiceCall(RootDocument document)`
   where a `private final` service field declared in source is used to call another service method and

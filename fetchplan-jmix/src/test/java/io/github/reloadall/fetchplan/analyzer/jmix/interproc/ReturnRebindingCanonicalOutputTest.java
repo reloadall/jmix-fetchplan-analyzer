@@ -32,12 +32,14 @@ import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceMethodResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService.FullChainAct;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService.GroupingAct;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -164,6 +166,62 @@ class ReturnRebindingCanonicalOutputTest {
                 ),
                 analyzePaths("scalarArgumentsMustNotBecomePathAnchors")
         );
+    }
+
+    @Test
+    void fullChainQueryResultMustNotInheritFilterArgumentOrigins() {
+        Set<String> paths = analyzePaths(
+                "fullChainQueryResultMustNotInheritFilterArgumentOrigins",
+                "act",
+                FullChainAct.class.getSimpleName()
+        );
+
+        assertEquals(
+                Set.of(
+                        "dateStart",
+                        "dateFinish",
+                        "contract",
+                        "currency"
+                ),
+                paths
+        );
+
+        assertFalse(paths.contains("dateStart.docLine"));
+        assertFalse(paths.contains("dateStart.cost"));
+        assertFalse(paths.contains("dateFinish.docLine"));
+        assertFalse(paths.contains("dateFinish.cost"));
+        assertFalse(paths.contains("contract.docLine"));
+        assertFalse(paths.contains("contract.cost"));
+        assertFalse(paths.contains("currency.docLine"));
+        assertFalse(paths.contains("currency.cost"));
+    }
+
+    @Test
+    void fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins() {
+        Set<String> paths = analyzePaths(
+                "fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins",
+                "act",
+                FullChainAct.class.getSimpleName()
+        );
+
+        assertEquals(
+                Set.of(
+                        "dateStart",
+                        "dateFinish",
+                        "contract",
+                        "currency"
+                ),
+                paths
+        );
+
+        assertFalse(paths.contains("dateStart.docLine"));
+        assertFalse(paths.contains("dateStart.cost"));
+        assertFalse(paths.contains("dateFinish.docLine"));
+        assertFalse(paths.contains("dateFinish.cost"));
+        assertFalse(paths.contains("contract.docLine"));
+        assertFalse(paths.contains("contract.cost"));
+        assertFalse(paths.contains("currency.docLine"));
+        assertFalse(paths.contains("currency.cost"));
     }
 
     private Set<String> analyzePaths(String methodName) {
