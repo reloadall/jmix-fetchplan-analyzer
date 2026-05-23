@@ -26,6 +26,9 @@
 - narrow foreach fan-out for collection-injected Spring worker beans via `List<T>` / `Collection<T>` / `Iterable<T>` when loop variable directly scopes a method call and all implementations are resolved
 - value-call in initializer/assignment
 - return-based rebinding in simple cases
+- helper-body entity reads for same-class/interprocedural value-calls even when the helper return value is non-entity or otherwise not rebindable;
+  in such cases the analyzer preserves caller-to-parameter binding and still traverses helper internals best-effort instead of dropping
+  the whole call as an empty path tree
 - recursion guard
 - root-entity getter reads inside top-level method-call arguments, including narrow wrapper/pass-through argument shapes such as
   `IdLike.of(document.getContract())`, when the relevant fetch-plan usage is the pre-boundary reference anchor rather than
@@ -122,6 +125,10 @@ Currently covered by scenario integration:
   `DocumentScenarioService.inspectDocumentWithForwardedRepositoryArguments(Document document)`
   where a private helper receives root-derived scalar/reference values and then forwards them into a boundary call with no
   analyzable body; source-side root paths are preserved as final pre-boundary usages.
+  Boundary/query return values are not considered root-derived return origins merely because their filter arguments are
+  root-derived. For example, `return transactionQuery(dateStart, dateFinish, contractId, currencyId)` may preserve the
+  filter argument usages, but the returned query result itself must remain unbound/external unless a separate supported
+  return-origin expression proves otherwise.
 - Lombok-style constructor-injected single-bean interprocedural call via
   `SyntheticLombokScenarioService.inspectDocumentWithLombokServiceCall(RootDocument document)`
   where a `private final` service field declared in source is used to call another service method and

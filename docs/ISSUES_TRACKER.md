@@ -91,6 +91,9 @@ Status values used below:
   - explicit `this.someMethod(...)` flow;
   - simple value-call assignment flow;
   - same-class helper return rebinding.
+  Added focused regression coverage in `ReturnRebindingCanonicalOutputTest` for helper-body entity reads preserved across
+  same-class value-calls whose helper return value is non-entity / not rebindable, including foreach element binding,
+  constructor-argument usage boundary, and nested method-call argument usage (`currentSum.add(line.getCost())`).
 - Remaining gap:
   Interproc behavior is still not deeply isolated by focused core regression tests for recursion guard, ambiguous resolution, or broader bean-resolution cases.
 
@@ -867,3 +870,95 @@ Status values used below:
   This is **not** repository reload support and does not implement `dataManager.load(...)`, `Id.of(...)`, or fetch-plan
   builder semantics. It only preserves the last confirmed pre-boundary entity anchor before an unsupported reload/id
   boundary.
+
+---
+
+## ISSUE-030 — Boundary/query return incorrectly inherits origins from filter arguments
+
+- Status: `RESOLVED`
+- Area: interprocedural return-origin analysis / boundary-query calls / value-call rebinding
+- Found during: focused regression for `fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins(FullChainAct act)`
+- Summary:
+  A helper method that returns a boundary/query-like method call with root-derived filter arguments can incorrectly make
+  those filter arguments look like origins of the returned query result. When caller code later iterates or otherwise reads
+  the returned result, the analyzer may attach result-entity reads under filter paths such as `dateStart`, `contract`, or
+  `currency`.
+- Evidence:
+  The focused failing regression currently expects only:
+  - `dateStart`
+  - `dateFinish`
+  - `contract`
+  - `currency`
+
+  but the analyzer produces:
+  - `dateStart.docLine`
+  - `dateStart.cost`
+  - `dateStart`
+  - `dateFinish.docLine`
+  - `dateFinish.cost`
+  - `dateFinish`
+  - `contract.docLine`
+  - `contract.cost`
+  - `contract`
+  - `currency.docLine`
+  - `currency.cost`
+  - `currency`
+- Required interprocedural origin contract:
+  1. Method arguments may produce usage paths.
+     Example: `act.getDateStart()` -> `dateStart`.
+  2. Method arguments may be expandable origins inside the callee body only for usage of that exact parameter.
+     Example: `groupTotals(liabilityLines)` may emit `liabilityLines.rate` / `liabilityLines.cost` from
+     `for (Line line : lines)`.
+  3. Method arguments must not automatically become origins of the method return value.
+  4. Caller result variable rebinding is allowed only from explicit resolved return expressions rooted in caller-origin paths.
+     Example: `return document.getShippingAddress()` may rebind result to `shippingAddress`.
+  5. A return expression that is an unsupported/boundary/query call with filter arguments must not use those filter
+     arguments as return origins.
+     Example: `return transactionQuery(dateStart, dateFinish, contractId, currencyId)` must not rebind result to
+     `dateStart` / `dateFinish` / `contract` / `currency`.
+  6. If return origin is unresolved/external/query result, the caller result variable must remain unbound/external.
+  7. Later reads from that unbound/external result must not attach under filter argument paths.
+  8. Parameter usage analysis and return-origin analysis are separate concerns.
+- Audit note / likely violation point:
+  The likely violation is in `InterprocReturnResolver.handleReturnStatement(...)`. When direct return-expression resolution
+  through `context.getExpressionResolver().resolveAll(...)` is empty, it falls back to
+  `collectBoundaryArgumentUsages(...)` and returns those argument-usage nodes as the return value. That fallback is useful
+  for preserving source-side usage paths at boundary calls, but it is unsafe when the caller treats the returned
+  `ExpressionResolutionResult` as a rebindable return origin.
+
+  The problematic path is:
+  - `InterprocCallPlanner.planValueCall(...)` eagerly calls `interprocReturnResolver.resolveReturnValue(...)`;
+  - `InterprocReturnResolver.handleReturnStatement(...)` sees `return transactionQuery(dateStart, dateFinish, ...)`;
+  - `InterprocMethodCallExpressionHandler.resolveAll(...)` / direct expression resolution cannot resolve a meaningful
+    query-result origin;
+  - `handleReturnStatement(...)` falls back to `collectBoundaryArgumentUsages(...)`;
+  - `planValueCall(...)` receives those filter-argument usage nodes as `returnResult` and binds the caller variable
+    `paymentTransactions` to them;
+  - subsequent `generatePayments(paymentTransactions, act)` expands `Transaction` reads under the filter argument paths.
+- Resolution:
+  Separated return-origin analysis from boundary-argument usage preservation in
+  `InterprocReturnResolver.handleReturnStatement(...)`. Directly resolved return expressions still produce return origins,
+  so valid rebinding such as `return document.getShippingAddress()` remains supported. When a return expression cannot be
+  resolved as a real origin and only boundary/query arguments can be collected, those argument paths are now preserved as
+  side effects, not returned as `returnValues`. This prevents `InterprocCallPlanner.planValueCall(...)` from binding caller
+  result variables such as `paymentTransactions` to filter arguments like `dateStart`, `contract`, or `currency`.
+- Follow-up decision:
+  A broader parameter-scoped task/model refactor is not needed for this concrete failing scenario. The immediate bug was
+  fixed at the return-origin boundary, and explicit parameter return remains supported by regression coverage such as
+  `returnedParameterShouldRebindExplicitOrigin`, where `return address` correctly rebinds to caller-origin path
+  `shippingAddress.city`. Keep parameter-scoped interproc task refactoring as a future option only if a concrete bug shows
+  that shared `targetBindings` causes incorrect parameter usage.
+- `terminalOnly` audit after fix:
+  The `ValueBinding.terminalOnly` marker is still useful as a boundary/usage-only marker after the ISSUE-030 fix. It lets
+  argument binding preserve source-side usages for scalar or otherwise non-expandable parameters while preventing normal
+  name resolution, entry-anchor selection, and caller-variable rebinding from treating those bindings as expandable entity
+  origins. Current meaningful dependencies include:
+  - scalar/filter arguments such as `dateStart` / `dateFinish` staying observable as terminal usages;
+  - forwarded repository/boundary argument scenarios preserving pre-boundary source paths;
+  - non-rebindable helper-body reads such as `groupTotals(liabilityLines)` still expanding only the actual collection
+    parameter that is safe to traverse;
+  - visited-key fingerprinting distinguishing terminal-only usage bindings from expandable bindings.
+
+  No production cleanup is currently justified solely by the ISSUE-030 fix. Some scalar-like condition handling may be a
+  separate future cleanup candidate, but it should only be changed with a concrete regression target because it protects
+  existing condition/body-read scenarios from structural parent noise.

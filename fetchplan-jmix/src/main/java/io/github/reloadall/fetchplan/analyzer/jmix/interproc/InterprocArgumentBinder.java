@@ -1,5 +1,6 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.interproc;
 
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -58,7 +59,7 @@ public class InterprocArgumentBinder {
             }
 
             if (!result.isEmpty()) {
-                boolean terminalOnly = shouldBindAsTerminalOnly(rawTree, step, argument, context);
+                boolean terminalOnly = shouldBindAsTerminalOnly(parameter, rawTree, step, argument, context);
                 bindings.put(
                         parameter.getNameAsString(),
                         terminalOnly
@@ -83,12 +84,52 @@ public class InterprocArgumentBinder {
         return Optional.of(bindings);
     }
 
-    private boolean shouldBindAsTerminalOnly(RawTree rawTree,
+    private boolean shouldBindAsTerminalOnly(Parameter parameter,
+                                             RawTree rawTree,
                                              AnalysisStep step,
                                              Expression expression,
                                              EngineContext context) {
         ExpressionResolutionResult direct = context.getExpressionResolver().resolveAll(rawTree, step, expression, context);
-        return direct.isEmpty();
+        return direct.isEmpty() || isNonExpandableParameterType(parameter);
+    }
+
+    private boolean isNonExpandableParameterType(Parameter parameter) {
+        if (parameter == null) {
+            return false;
+        }
+
+        if (parameter.getType().isPrimitiveType()) {
+            return true;
+        }
+
+        String typeName = parameter.getType().asString();
+        int genericIndex = typeName.indexOf('<');
+        if (genericIndex >= 0) {
+            typeName = typeName.substring(0, genericIndex);
+        }
+        typeName = typeName.trim();
+
+        return List.of(
+                "String",
+                "CharSequence",
+                "Number",
+                "Byte",
+                "Short",
+                "Integer",
+                "Long",
+                "Float",
+                "Double",
+                "Boolean",
+                "Character",
+                "BigDecimal",
+                "BigInteger",
+                "LocalDate",
+                "LocalDateTime",
+                "OffsetDateTime",
+                "Instant",
+                "Date",
+                "UUID"
+        ).contains(typeName);
     }
 
     private ExpressionResolutionResult collectForwardedArgumentSources(RawTree rawTree,

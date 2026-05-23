@@ -32,11 +32,14 @@ import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceMethodResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceRootsResolver;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Document;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService.FullChainAct;
+import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService.GroupingAct;
 import io.github.reloadall.fetchplan.analyzer.scenario.document.service.ReturnRebindingFixtureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -114,7 +117,126 @@ class ReturnRebindingCanonicalOutputTest {
         );
     }
 
+    @Test
+    void returnedParameterShouldRebindExplicitOrigin() {
+        assertEquals(
+                Set.of("shippingAddress.city"),
+                analyzePaths("returnedParameterShouldRebindExplicitOrigin")
+        );
+    }
+
+    @Test
+    void helperBodyReadsShouldBePreservedForNonRebindableValueCall() {
+        assertEquals(
+                Set.of(
+                        "liabilityLines.rate",
+                        "liabilityLines.nomenclature",
+                        "liabilityLines.type",
+                        "liabilityLines.cost",
+                        "paymentLines.rate",
+                        "paymentLines.nomenclature",
+                        "paymentLines.type",
+                        "paymentLines.cost"
+                ),
+                analyzePaths(
+                        "helperBodyReadsShouldBePreservedForNonRebindableValueCall",
+                        "act",
+                        GroupingAct.class.getSimpleName()
+                )
+        );
+    }
+
+    @Test
+    void helperBodyReadsShouldIgnoreReturnedMapUsageForNonRebindableValueCall() {
+        assertEquals(
+                Set.of(
+                        "liabilityLines.rate",
+                        "liabilityLines.nomenclature",
+                        "liabilityLines.type",
+                        "liabilityLines.cost"
+                ),
+                analyzePaths(
+                        "helperBodyReadsShouldIgnoreReturnedMapUsageForNonRebindableValueCall",
+                        "act",
+                        GroupingAct.class.getSimpleName()
+                )
+        );
+    }
+
+    @Test
+    void scalarArgumentsMustNotBecomePathAnchors() {
+        assertEquals(
+                Set.of(
+                        "dateStart",
+                        "dateFinish",
+                        "contract",
+                        "currency"
+                ),
+                analyzePaths("scalarArgumentsMustNotBecomePathAnchors")
+        );
+    }
+
+    @Test
+    void fullChainQueryResultMustNotInheritFilterArgumentOrigins() {
+        Set<String> paths = analyzePaths(
+                "fullChainQueryResultMustNotInheritFilterArgumentOrigins",
+                "act",
+                FullChainAct.class.getSimpleName()
+        );
+
+        assertEquals(
+                Set.of(
+                        "dateStart",
+                        "dateFinish",
+                        "contract",
+                        "currency"
+                ),
+                paths
+        );
+
+        assertFalse(paths.contains("dateStart.docLine"));
+        assertFalse(paths.contains("dateStart.cost"));
+        assertFalse(paths.contains("dateFinish.docLine"));
+        assertFalse(paths.contains("dateFinish.cost"));
+        assertFalse(paths.contains("contract.docLine"));
+        assertFalse(paths.contains("contract.cost"));
+        assertFalse(paths.contains("currency.docLine"));
+        assertFalse(paths.contains("currency.cost"));
+    }
+
+    @Test
+    void fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins() {
+        Set<String> paths = analyzePaths(
+                "fullChainBoundaryReturnMustNotInheritFilterArgumentOrigins",
+                "act",
+                FullChainAct.class.getSimpleName()
+        );
+
+        assertEquals(
+                Set.of(
+                        "dateStart",
+                        "dateFinish",
+                        "contract",
+                        "currency"
+                ),
+                paths
+        );
+
+        assertFalse(paths.contains("dateStart.docLine"));
+        assertFalse(paths.contains("dateStart.cost"));
+        assertFalse(paths.contains("dateFinish.docLine"));
+        assertFalse(paths.contains("dateFinish.cost"));
+        assertFalse(paths.contains("contract.docLine"));
+        assertFalse(paths.contains("contract.cost"));
+        assertFalse(paths.contains("currency.docLine"));
+        assertFalse(paths.contains("currency.cost"));
+    }
+
     private Set<String> analyzePaths(String methodName) {
+        return analyzePaths(methodName, "document", Document.class.getName());
+    }
+
+    private Set<String> analyzePaths(String methodName, String rootParamName, String rootParamType) {
         AnalysisTrace analysisTrace = new AnalysisTrace();
 
         Path scenarioSourceRoot = Path.of("..", "fetchplan-jmix-test-scenarios", "src", "main", "java")
@@ -177,11 +299,11 @@ class ReturnRebindingCanonicalOutputTest {
         MethodDeclaration method = sourceMethodResolver.resolve(
                 ReturnRebindingFixtureService.class.getName(),
                 methodName,
-                "document",
-                Document.class.getName()
+                rootParamName,
+                rootParamType
         );
 
-        RawTree rawTree = astPathEngine.analyze(method, "document");
+        RawTree rawTree = astPathEngine.analyze(method, rootParamName);
         return new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
     }
 }
