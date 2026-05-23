@@ -64,4 +64,12 @@ public class DocumentLine {
     public void setDocument(Document document) {
         this.document = document;
     }
+
+    public CodeKind getCodeAsEnum() {
+        return CodeKind.DEFAULT;
+    }
+
+    public enum CodeKind {
+        DEFAULT
+    }
 }

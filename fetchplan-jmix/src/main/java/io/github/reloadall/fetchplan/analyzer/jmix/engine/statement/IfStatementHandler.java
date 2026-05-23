@@ -45,32 +45,27 @@ public class IfStatementHandler implements StatementHandler {
         StatementsPayload currentPayload = (StatementsPayload) step.getPayload();
 
         StatementsPayload afterIfPayload = currentPayload.next();
-        Continuation afterIfContinuation = new Continuation(
-                step.getMethod(),
-                afterIfPayload,
-                step.getCurrentRawNode(),
-                step.getBindings()
-        );
+        List<Statement> afterIfStatements = afterIfPayload.remainingStatements();
 
         List<Continuation> continuations = new ArrayList<>();
 
         StatementsPayload thenPayload = new StatementsPayload(
-                asStatements(ifStmt.getThenStmt()),
+                concat(asStatements(ifStmt.getThenStmt()), afterIfStatements),
                 0,
-                afterIfContinuation
+                afterIfPayload.getContinuationOnFinish()
         );
         continuations.add(step.continueWith(thenPayload));
 
         if (ifStmt.getElseStmt().isPresent()) {
             StatementsPayload elsePayload = new StatementsPayload(
-                    asStatements(ifStmt.getElseStmt().get()),
+                    concat(asStatements(ifStmt.getElseStmt().get()), afterIfStatements),
                     0,
-                    afterIfContinuation
+                    afterIfPayload.getContinuationOnFinish()
             );
             continuations.add(step.continueWith(elsePayload));
         } else {
             if (afterIfPayload.hasCurrentStatement() || afterIfPayload.getContinuationOnFinish() != null) {
-                continuations.add(afterIfContinuation);
+                continuations.add(step.continueWith(afterIfPayload));
             }
         }
 
@@ -202,6 +197,20 @@ public class IfStatementHandler implements StatementHandler {
             return statement.asBlockStmt().getStatements();
         }
         return List.of(statement);
+    }
+
+    private List<Statement> concat(List<Statement> first, List<Statement> second) {
+        if (first.isEmpty()) {
+            return second;
+        }
+        if (second.isEmpty()) {
+            return first;
+        }
+
+        List<Statement> result = new ArrayList<>(first.size() + second.size());
+        result.addAll(first);
+        result.addAll(second);
+        return result;
     }
 
 }

@@ -84,6 +84,22 @@ public class GetterPropertyAccessResolver {
         return analyzeComputedGetterBody(scopeClass, methodCallExpr.getNameAsString());
     }
 
+    public Optional<String> resolveBackedPropertyName(MethodDeclaration currentMethod,
+                                                      String ownerTypeName,
+                                                      String methodName) {
+        Objects.requireNonNull(currentMethod, "currentMethod is null");
+
+        String candidateProperty = extractGetterPropertyName(methodName);
+        if (candidateProperty == null) {
+            return Optional.empty();
+        }
+
+        return resolveTypeName(currentMethod, ownerTypeName)
+                .filter(this::isEntityLikeClass)
+                .filter(ownerType -> hasBackedProperty(ownerType, candidateProperty))
+                .map(ownerType -> candidateProperty);
+    }
+
     private Set<String> analyzeComputedGetterBody(Class<?> entityClass, String methodName) {
         if (sourceAnalysisCache == null) {
             return Set.of();
@@ -353,13 +369,19 @@ public class GetterPropertyAccessResolver {
     }
 
     private String extractGetterPropertyName(MethodCallExpr methodCallExpr) {
-        String methodName = methodCallExpr.getNameAsString();
+        if (!methodCallExpr.getArguments().isEmpty()) {
+            return null;
+        }
 
-        if (methodName.startsWith("get") && methodName.length() > 3 && methodCallExpr.getArguments().isEmpty()) {
+        return extractGetterPropertyName(methodCallExpr.getNameAsString());
+    }
+
+    private String extractGetterPropertyName(String methodName) {
+        if (methodName.startsWith("get") && methodName.length() > 3) {
             return decapitalize(methodName.substring(3));
         }
 
-        if (methodName.startsWith("is") && methodName.length() > 2 && methodCallExpr.getArguments().isEmpty()) {
+        if (methodName.startsWith("is") && methodName.length() > 2) {
             return decapitalize(methodName.substring(2));
         }
 

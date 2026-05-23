@@ -1,6 +1,7 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import com.github.javaparser.ast.expr.Expression;
@@ -8,16 +9,33 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
+import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceAnalysisCache;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.FlowKind;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_MapMethodCallExpressionHandler")
 @Order(160)
 public class MapMethodCallExpressionHandler implements ExpressionHandler {
+
+    private final GetterPropertyAccessResolver getterPropertyAccessResolver;
+
+    public MapMethodCallExpressionHandler() {
+        this(new GetterPropertyAccessResolver());
+    }
+
+    @Autowired
+    public MapMethodCallExpressionHandler(SourceAnalysisCache sourceAnalysisCache) {
+        this(new GetterPropertyAccessResolver(sourceAnalysisCache));
+    }
+
+    MapMethodCallExpressionHandler(GetterPropertyAccessResolver getterPropertyAccessResolver) {
+        this.getterPropertyAccessResolver = getterPropertyAccessResolver;
+    }
 
     @Override
     public boolean supports(Expression expression) {
@@ -49,11 +67,6 @@ public class MapMethodCallExpressionHandler implements ExpressionHandler {
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
         MethodReferenceExpr methodReferenceExpr = methodCallExpr.getArgument(0).asMethodReferenceExpr();
 
-        String mappedField = extractFieldName(methodReferenceExpr.getIdentifier());
-        if (mappedField == null) {
-            return ExpressionResolutionResult.empty();
-        }
-
         ExpressionResolutionResult scopeResult = context.getExpressionResolver().resolveAll(
                 rawTree,
                 step,
@@ -65,6 +78,11 @@ public class MapMethodCallExpressionHandler implements ExpressionHandler {
             return scopeResult.isUncertain()
                     ? ExpressionResolutionResult.uncertainEmpty()
                     : ExpressionResolutionResult.empty();
+        }
+
+        Optional<String> mappedField = resolveMappedField(step, methodReferenceExpr);
+        if (mappedField.isEmpty()) {
+            return scopeResult;
         }
 
         Set<RawNode> resultNodes = new LinkedHashSet<>();
@@ -80,7 +98,7 @@ public class MapMethodCallExpressionHandler implements ExpressionHandler {
 
             RawNode mappedNode = rawTree.addChild(
                     elementNode,
-                    mappedField,
+                    mappedField.get(),
                     FlowKind.DIRECT,
                     null,
                     UsageKind.INTERMEDIATE
@@ -92,31 +110,12 @@ public class MapMethodCallExpressionHandler implements ExpressionHandler {
         return new ExpressionResolutionResult(resultNodes, scopeResult.isUncertain());
     }
 
-    private String extractFieldName(String methodName) {
-        if (methodName == null || methodName.isBlank()) {
-            return null;
-        }
-
-        if (methodName.startsWith("get") && methodName.length() > 3) {
-            return decapitalize(methodName.substring(3));
-        }
-
-        if (methodName.startsWith("is") && methodName.length() > 2) {
-            return decapitalize(methodName.substring(2));
-        }
-
-        return null;
-    }
-
-    private String decapitalize(String value) {
-        if (value == null || value.isEmpty()) {
-            return value;
-        }
-
-        if (value.length() == 1) {
-            return value.toLowerCase();
-        }
-
-        return Character.toLowerCase(value.charAt(0)) + value.substring(1);
+    private Optional<String> resolveMappedField(AnalysisStep step, MethodReferenceExpr methodReferenceExpr) {
+        String ownerTypeName = methodReferenceExpr.getScope().toString();
+        return getterPropertyAccessResolver.resolveBackedPropertyName(
+                step.getMethod(),
+                ownerTypeName,
+                methodReferenceExpr.getIdentifier()
+        );
     }
 }

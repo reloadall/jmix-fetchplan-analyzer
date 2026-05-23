@@ -65,6 +65,7 @@ import io.github.reloadall.fetchplan.analyzer.scenario.document.service.Customer
 import org.springframework.context.ApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -158,6 +159,18 @@ class DocumentScenarioIntegrationTest {
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LEAF_PATHS
         );
+    }
+
+    @Test
+    void mapMethodReferenceDoesNotCreatePathForComputedGetter() {
+        ScenarioResult result = analyzeScenario(
+                "inspectDocumentWithStreamMapComputedGetter",
+                Set.of("lines"),
+                Set.of("lines")
+        );
+
+        assertEquals(Set.of("lines"), result.analyzedPaths(), result.trace());
+        assertFalse(result.analyzedPaths().contains("lines.codeAsEnum"), result.trace());
     }
 
     @Test

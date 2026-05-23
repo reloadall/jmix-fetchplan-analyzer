@@ -57,6 +57,13 @@ public class StatementsPayload implements StepPayload {
         return new StatementsPayload(statements, statementIndex + 1, continuationOnFinish);
     }
 
+    public List<Statement> remainingStatements() {
+        if (!hasCurrentStatement()) {
+            return List.of();
+        }
+        return statements.subList(statementIndex, statements.size());
+    }
+
     public StatementsPayload withContinuationOnFinish(Continuation continuationOnFinish) {
         return new StatementsPayload(statements, statementIndex, continuationOnFinish);
     }

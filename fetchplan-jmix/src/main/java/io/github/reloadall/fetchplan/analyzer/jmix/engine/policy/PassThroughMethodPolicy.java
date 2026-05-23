@@ -16,7 +16,8 @@ public class PassThroughMethodPolicy {
             "sorted",
             "peek",
             "limit",
-            "skip"
+            "skip",
+            "toList"
     );
 
     public boolean isPassThrough(MethodCallExpr methodCallExpr) {

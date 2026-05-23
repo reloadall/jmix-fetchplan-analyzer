@@ -96,6 +96,13 @@ public class DocumentScenarioService {
                 .map(io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Product::getSku);
     }
 
+    public void inspectDocumentWithStreamMapComputedGetter(Document document) {
+        document.getLines()
+                .stream()
+                .map(DocumentLine::getCodeAsEnum)
+                .toList();
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
