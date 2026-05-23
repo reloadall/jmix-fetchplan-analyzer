@@ -942,3 +942,23 @@ Status values used below:
   resolved as a real origin and only boundary/query arguments can be collected, those argument paths are now preserved as
   side effects, not returned as `returnValues`. This prevents `InterprocCallPlanner.planValueCall(...)` from binding caller
   result variables such as `paymentTransactions` to filter arguments like `dateStart`, `contract`, or `currency`.
+- Follow-up decision:
+  A broader parameter-scoped task/model refactor is not needed for this concrete failing scenario. The immediate bug was
+  fixed at the return-origin boundary, and explicit parameter return remains supported by regression coverage such as
+  `returnedParameterShouldRebindExplicitOrigin`, where `return address` correctly rebinds to caller-origin path
+  `shippingAddress.city`. Keep parameter-scoped interproc task refactoring as a future option only if a concrete bug shows
+  that shared `targetBindings` causes incorrect parameter usage.
+- `terminalOnly` audit after fix:
+  The `ValueBinding.terminalOnly` marker is still useful as a boundary/usage-only marker after the ISSUE-030 fix. It lets
+  argument binding preserve source-side usages for scalar or otherwise non-expandable parameters while preventing normal
+  name resolution, entry-anchor selection, and caller-variable rebinding from treating those bindings as expandable entity
+  origins. Current meaningful dependencies include:
+  - scalar/filter arguments such as `dateStart` / `dateFinish` staying observable as terminal usages;
+  - forwarded repository/boundary argument scenarios preserving pre-boundary source paths;
+  - non-rebindable helper-body reads such as `groupTotals(liabilityLines)` still expanding only the actual collection
+    parameter that is safe to traverse;
+  - visited-key fingerprinting distinguishing terminal-only usage bindings from expandable bindings.
+
+  No production cleanup is currently justified solely by the ISSUE-030 fix. Some scalar-like condition handling may be a
+  separate future cleanup candidate, but it should only be changed with a concrete regression target because it protects
+  existing condition/body-read scenarios from structural parent noise.
