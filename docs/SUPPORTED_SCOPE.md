@@ -103,6 +103,14 @@ Use it as:
 - a fetch plan relevance detector
 - a source of feedback and unsupported cases
 
+## Source analysis cache lifecycle
+
+`SourceAnalysisCache` is an application-lifetime cache for resolved source roots, class-name-to-source-file lookups,
+and parsed JavaParser `CompilationUnit` instances. The addon does not watch source files or support hot-deploy / hot-reload
+of changed sources inside a running JVM. If analyzed source code changes, the expected usage model is to restart the
+application before running analysis again. For that reason, a manual cache clear/reset MBean operation is intentionally not
+provided.
+
 ## Scenario coverage in `fetchplan-jmix-test-scenarios`
 
 The scenario module now contains focused root methods with separate expected path sets.

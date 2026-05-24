@@ -183,6 +183,11 @@ Status values used below:
   Added shared `SourceAnalysisCache` used by `SourceMethodResolver` and `InterprocMethodResolver`.
   The cache stores application-lifetime source roots, `fqcn -> Path` lookups including negative results,
   and `Path -> CompilationUnit` parsing results.
+- Lifecycle decision:
+  `SourceAnalysisCache` is intentionally scoped to the application lifetime. The addon does not track source-file changes
+  or support hot-deploy / hot-reload of changed sources inside a running JVM. After source changes, the expected model is
+  application restart before analysis. Under this no-hot-deploy model, a manual cache clear/reset MBean operation is not
+  needed and is intentionally not provided.
 
 ---
 
