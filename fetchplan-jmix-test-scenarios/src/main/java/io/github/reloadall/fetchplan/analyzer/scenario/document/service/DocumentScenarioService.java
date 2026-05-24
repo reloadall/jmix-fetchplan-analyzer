@@ -104,6 +104,28 @@ public class DocumentScenarioService {
                 .toList();
     }
 
+    public void inspectDocumentWithStreamMapLambdaEntityContinuation(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> line.getProduct())
+                .forEach(product -> product.getSku());
+    }
+
+    public void inspectDocumentWithStreamMapLambdaLeafToList(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> line.getProduct().getSku())
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamMapLambdaThenFilter(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> line.getProduct())
+                .filter(product -> product.getCategory().getCode().equals("A"))
+                .forEach(product -> product.getSku());
+    }
+
     public void inspectDocumentWithCollectionForEachLambda(Document document) {
         document.getLines()
                 .forEach(line -> line.getProduct().getSku());

@@ -59,6 +59,19 @@ public final class DocumentScenarioExpectedPaths {
             "lines.product.sku"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER = Set.of(
+            "lines.product.category.code",
+            "lines.product.sku"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_COLLECTION_FOR_EACH_LAMBDA = Set.of(
             "lines.product.sku"
     );

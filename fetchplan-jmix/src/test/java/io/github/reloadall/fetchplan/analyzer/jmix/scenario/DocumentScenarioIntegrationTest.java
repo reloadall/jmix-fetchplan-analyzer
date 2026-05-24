@@ -30,6 +30,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MapMethodCa
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.NameExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.PassThroughMethodCallExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.PassThroughMethodPolicy;
@@ -175,6 +176,36 @@ class DocumentScenarioIntegrationTest {
 
         assertEquals(Set.of("lines"), result.analyzedPaths(), result.trace());
         assertFalse(result.analyzedPaths().contains("lines.codeAsEnum"), result.trace());
+    }
+
+    @Test
+    void analyzesStreamMapLambdaEntityContinuationScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapLambdaEntityContinuation",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapLambdaLeafToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapLambdaLeafToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapLambdaThenFilterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapLambdaThenFilter",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER_LEAF_PATHS
+        );
     }
 
     @Test
@@ -599,6 +630,7 @@ class DocumentScenarioIntegrationTest {
                 new NameExpressionHandler(),
                 new CollectionGetExpressionHandler(),
                 new MapMethodCallExpressionHandler(),
+                new StreamMapLambdaExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),

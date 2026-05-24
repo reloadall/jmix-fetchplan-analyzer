@@ -131,6 +131,39 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines.product.sku"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION_LEAF_PATHS = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST_LEAF_PATHS = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.category",
+            "lines.product.category.code",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER_LEAF_PATHS = Set.of(
+            "lines.product.category.code",
+            "lines.product.sku"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_COLLECTION_FOR_EACH_LAMBDA_ALL_PATHS = Set.of(
             "lines",
             "lines.product",
