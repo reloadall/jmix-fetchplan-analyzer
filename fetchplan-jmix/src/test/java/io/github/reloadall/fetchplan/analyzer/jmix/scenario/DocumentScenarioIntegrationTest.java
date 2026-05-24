@@ -30,6 +30,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MapMethodCa
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.NameExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.PassThroughMethodCallExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectToMapExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
@@ -315,6 +316,46 @@ class DocumentScenarioIntegrationTest {
                 DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_NONE_MATCH_LAMBDA,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_NONE_MATCH_LAMBDA_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_NONE_MATCH_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapMethodRefsScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapMethodRefs",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapLambdasScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapLambdas",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapMergeScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapMerge",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapIdentityValueScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapIdentityValue",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_LEAF_PATHS
         );
     }
 
@@ -664,6 +705,7 @@ class DocumentScenarioIntegrationTest {
                 new ForEachLambdaExpressionHandler(),
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),
+                new StreamCollectToMapExpressionHandler(),
                 new PassThroughMethodCallExpressionHandler(new PassThroughMethodPolicy()),
                 new ConditionalExpressionHandler(),
                 new InterprocMethodCallExpressionHandler(

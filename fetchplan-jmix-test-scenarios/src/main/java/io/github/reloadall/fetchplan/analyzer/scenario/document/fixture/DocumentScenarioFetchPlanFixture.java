@@ -284,6 +284,52 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines.quantity"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS_LEAF_PATHS = Set.of(
+            "lines.product",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_LEAF_PATHS = Set.of(
+            "lines",
+            "lines.product.sku"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",

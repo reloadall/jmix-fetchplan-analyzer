@@ -206,6 +206,43 @@ public class DocumentScenarioService {
                 .noneMatch(line -> line.getQuantity() == 0);
     }
 
+    public void inspectDocumentWithStreamCollectToMapMethodRefs(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        DocumentLine::getProduct,
+                        DocumentLine::getQuantity
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectToMapLambdas(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        line -> line.getProduct().getSku(),
+                        line -> line.getQuantity()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectToMapMerge(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        line -> line.getProduct().getSku(),
+                        line -> line.getQuantity(),
+                        (a, b) -> a
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectToMapIdentityValue(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        line -> line.getProduct().getSku(),
+                        java.util.function.Function.identity()
+                ));
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
