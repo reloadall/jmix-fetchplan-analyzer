@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.stmt.Statement;
@@ -76,12 +77,7 @@ class LambdaElementBindingSupport {
                                                 EngineContext context) {
         Statement body = lambdaExpr.getBody();
         if (body.isExpressionStmt()) {
-            return context.getExpressionResolver().resolveAll(
-                    rawTree,
-                    lambdaStep,
-                    body.asExpressionStmt().getExpression(),
-                    context
-            );
+            return resolveExpressionReads(rawTree, lambdaStep, body.asExpressionStmt().getExpression(), context);
         }
 
         if (!body.isBlockStmt()) {
@@ -94,7 +90,7 @@ class LambdaElementBindingSupport {
                 continue;
             }
 
-            ExpressionResolutionResult statementResult = context.getExpressionResolver().resolveAll(
+            ExpressionResolutionResult statementResult = resolveExpressionReads(
                     rawTree,
                     lambdaStep,
                     statement.asExpressionStmt().getExpression(),
@@ -103,6 +99,65 @@ class LambdaElementBindingSupport {
             merged = merged.merge(statementResult);
         }
 
+        return merged;
+    }
+
+    private ExpressionResolutionResult resolveExpressionReads(RawTree rawTree,
+                                                             AnalysisStep lambdaStep,
+                                                             Expression expression,
+                                                             EngineContext context) {
+        if (expression == null) {
+            return ExpressionResolutionResult.empty();
+        }
+
+        if (expression.isBinaryExpr()) {
+            ExpressionResolutionResult leftResult = resolveExpressionReads(
+                    rawTree,
+                    lambdaStep,
+                    expression.asBinaryExpr().getLeft(),
+                    context
+            );
+            ExpressionResolutionResult rightResult = resolveExpressionReads(
+                    rawTree,
+                    lambdaStep,
+                    expression.asBinaryExpr().getRight(),
+                    context
+            );
+            return leftResult.merge(rightResult);
+        }
+
+        if (expression.isEnclosedExpr()) {
+            return resolveExpressionReads(rawTree, lambdaStep, expression.asEnclosedExpr().getInner(), context);
+        }
+
+        ExpressionResolutionResult directResult = context.getExpressionResolver().resolveAll(
+                rawTree,
+                lambdaStep,
+                expression,
+                context
+        );
+
+        if (!expression.isMethodCallExpr()) {
+            return directResult;
+        }
+
+        if (!directResult.isEmpty() || directResult.isUncertain()) {
+            return directResult;
+        }
+
+        MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
+        ExpressionResolutionResult merged = directResult;
+        if (methodCallExpr.getScope().isPresent()) {
+            merged = merged.merge(resolveExpressionReads(
+                    rawTree,
+                    lambdaStep,
+                    methodCallExpr.getScope().get(),
+                    context
+            ));
+        }
+        for (Expression argument : methodCallExpr.getArguments()) {
+            merged = merged.merge(resolveExpressionReads(rawTree, lambdaStep, argument, context));
+        }
         return merged;
     }
 

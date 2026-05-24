@@ -23,6 +23,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.CastExpress
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ConditionalExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.EnclosedExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolver;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.FilterLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ForEachLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.InterprocMethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MapMethodCallExpressionHandler;
@@ -202,6 +203,26 @@ class DocumentScenarioIntegrationTest {
                 DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFilterLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFilterLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFilterMethodCallLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFilterMethodCallLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA_LEAF_PATHS
         );
     }
 
@@ -548,6 +569,7 @@ class DocumentScenarioIntegrationTest {
                 new CollectionGetExpressionHandler(),
                 new MapMethodCallExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
+                new FilterLambdaExpressionHandler(),
                 new PassThroughMethodCallExpressionHandler(new PassThroughMethodPolicy()),
                 new ConditionalExpressionHandler(),
                 new InterprocMethodCallExpressionHandler(

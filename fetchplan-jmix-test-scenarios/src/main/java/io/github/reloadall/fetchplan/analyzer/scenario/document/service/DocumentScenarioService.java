@@ -124,6 +124,20 @@ public class DocumentScenarioService {
                 });
     }
 
+    public void inspectDocumentWithStreamFilterLambda(Document document) {
+        document.getLines()
+                .stream()
+                .filter(line -> line.getProduct().getSku() != null)
+                .forEach(line -> line.getQuantity());
+    }
+
+    public void inspectDocumentWithStreamFilterMethodCallLambda(Document document) {
+        document.getLines()
+                .stream()
+                .filter(line -> line.getProduct().getCategory().getCode().equals("A"))
+                .forEach(line -> line.getQuantity());
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();

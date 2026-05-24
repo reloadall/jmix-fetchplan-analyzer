@@ -163,6 +163,31 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines.quantity"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.category",
+            "lines.product.category.code",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA_LEAF_PATHS = Set.of(
+            "lines.product.category.code",
+            "lines.quantity"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",
