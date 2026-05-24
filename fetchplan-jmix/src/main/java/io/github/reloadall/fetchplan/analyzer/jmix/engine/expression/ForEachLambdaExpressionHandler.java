@@ -1,18 +1,10 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.stmt.Statement;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
-import io.github.reloadall.fetchplan.analyzer.jmix.engine.ValueBinding;
-import io.github.reloadall.fetchplan.analyzer.jmix.tree.FlowKind;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
@@ -22,6 +14,8 @@ import org.springframework.stereotype.Component;
 @Component("fpa_ForEachLambdaExpressionHandler")
 @Order(165)
 public class ForEachLambdaExpressionHandler implements ExpressionHandler {
+
+    private final LambdaElementBindingSupport lambdaSupport = new LambdaElementBindingSupport();
 
     @Override
     public boolean supports(Expression expression) {
@@ -45,81 +39,26 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
         LambdaExpr lambdaExpr = methodCallExpr.getArgument(0).asLambdaExpr();
 
-        ExpressionResolutionResult scopeResult = context.getExpressionResolver().resolveAll(
+        LambdaElementBindingSupport.ScopeElements scopeElements = lambdaSupport.resolveScopeElements(
                 rawTree,
                 step,
-                methodCallExpr.getScope().get(),
+                methodCallExpr,
                 context
         );
+        ExpressionResolutionResult scopeResult = scopeElements.scopeResult();
         if (scopeResult.isEmpty()) {
-            return scopeResult.isUncertain()
-                    ? ExpressionResolutionResult.uncertainEmpty()
-                    : ExpressionResolutionResult.empty();
+            return scopeResult;
         }
 
-        Set<RawNode> elementNodes = new LinkedHashSet<>();
-        for (RawNode scopeNode : scopeResult.getNodes()) {
-            RawNode elementNode = rawTree.addChild(
-                    scopeNode,
-                    null,
-                    FlowKind.COLLECTION_ELEMENT,
-                    null,
-                    UsageKind.INTERMEDIATE
-            );
-            elementNodes.add(elementNode);
-        }
-
-        Map<String, ValueBinding> lambdaBindings = new LinkedHashMap<>(step.copyBindings());
-        lambdaBindings.put(
-                lambdaExpr.getParameter(0).getNameAsString(),
-                new ValueBinding(elementNodes, scopeResult.isUncertain())
+        AnalysisStep lambdaStep = lambdaSupport.createLambdaStep(
+                step,
+                lambdaExpr,
+                scopeElements.elementNodes(),
+                scopeResult.isUncertain()
         );
-
-        AnalysisStep lambdaStep = new AnalysisStep(
-                step.getMethod(),
-                step.getPayload(),
-                step.getCurrentRawNode(),
-                lambdaBindings
-        );
-
-        ExpressionResolutionResult bodyResult = resolveLambdaBody(rawTree, lambdaStep, lambdaExpr.getBody(), context);
+        ExpressionResolutionResult bodyResult = lambdaSupport.resolveLambdaBody(rawTree, lambdaStep, lambdaExpr, context);
         markTerminal(bodyResult);
         return new ExpressionResolutionResult(bodyResult.getNodes(), scopeResult.isUncertain() || bodyResult.isUncertain());
-    }
-
-    private ExpressionResolutionResult resolveLambdaBody(RawTree rawTree,
-                                                         AnalysisStep lambdaStep,
-                                                         Statement body,
-                                                         EngineContext context) {
-        if (body.isExpressionStmt()) {
-            return context.getExpressionResolver().resolveAll(
-                    rawTree,
-                    lambdaStep,
-                    body.asExpressionStmt().getExpression(),
-                    context
-            );
-        }
-
-        if (!body.isBlockStmt()) {
-            return ExpressionResolutionResult.empty();
-        }
-
-        ExpressionResolutionResult merged = ExpressionResolutionResult.empty();
-        for (Statement statement : body.asBlockStmt().getStatements()) {
-            if (!statement.isExpressionStmt()) {
-                continue;
-            }
-
-            ExpressionResolutionResult statementResult = context.getExpressionResolver().resolveAll(
-                    rawTree,
-                    lambdaStep,
-                    statement.asExpressionStmt().getExpression(),
-                    context
-            );
-            merged = merged.merge(statementResult);
-        }
-
-        return merged;
     }
 
     private void markTerminal(ExpressionResolutionResult result) {
