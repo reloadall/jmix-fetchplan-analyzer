@@ -69,6 +69,89 @@ class AstPathEngineIfElseTest {
     }
 
     @Test
+    void propagatesAlternativeBranchBindingsAfterIfElse() {
+        InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
+        when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(interprocCallPlanner.planValueCall(any(), any(), any(), any(), any())).thenReturn(Optional.empty());
+
+        NameExpressionHandler nameHandler = new NameExpressionHandler();
+        MethodCallExpressionHandler methodCallHandler = new MethodCallExpressionHandler();
+        ExpressionResolver expressionResolver = new ExpressionResolver(List.of(nameHandler, methodCallHandler));
+        EngineContext context = new EngineContext(expressionResolver);
+
+        StatementHandler expressionStatementHandler = new ExpressionStatementHandler(
+                new UnknownBreakPolicy(),
+                interprocCallPlanner
+        );
+        StatementHandler ifStatementHandler = new IfStatementHandler();
+        StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(
+                List.of(expressionStatementHandler, ifStatementHandler)
+        );
+
+        AstPathEngine engine = new AstPathEngine(
+                List.of(payloadHandler),
+                context,
+                new VisitedKeyFactory(),
+                new AnalysisTrace()
+        );
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Document document) { " +
+                        "Address address; " +
+                        "if (flag) { address = document.getShippingAddress(); } " +
+                        "else { address = document.getBillingAddress(); } " +
+                        "address.getCity();" +
+                        " }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "document");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("shippingAddress.city", "billingAddress.city"), paths);
+    }
+
+    @Test
+    void propagatesInitialAndThenBranchBindingsAfterIfWithoutElse() {
+        InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
+        when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(interprocCallPlanner.planValueCall(any(), any(), any(), any(), any())).thenReturn(Optional.empty());
+
+        NameExpressionHandler nameHandler = new NameExpressionHandler();
+        MethodCallExpressionHandler methodCallHandler = new MethodCallExpressionHandler();
+        ExpressionResolver expressionResolver = new ExpressionResolver(List.of(nameHandler, methodCallHandler));
+        EngineContext context = new EngineContext(expressionResolver);
+
+        StatementHandler expressionStatementHandler = new ExpressionStatementHandler(
+                new UnknownBreakPolicy(),
+                interprocCallPlanner
+        );
+        StatementHandler ifStatementHandler = new IfStatementHandler();
+        StatementsPayloadHandler payloadHandler = new StatementsPayloadHandler(
+                List.of(expressionStatementHandler, ifStatementHandler)
+        );
+
+        AstPathEngine engine = new AstPathEngine(
+                List.of(payloadHandler),
+                context,
+                new VisitedKeyFactory(),
+                new AnalysisTrace()
+        );
+
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(
+                "void sample(Document document) { " +
+                        "Address address = document.getShippingAddress(); " +
+                        "if (flag) { address = document.getBillingAddress(); } " +
+                        "address.getCity();" +
+                        " }"
+        );
+
+        RawTree rawTree = engine.analyze(method, "document");
+        Set<String> paths = new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
+
+        assertEquals(Set.of("shippingAddress.city", "billingAddress.city"), paths);
+    }
+
+    @Test
     void extractsConditionEntityPathWithoutChangingBranchExtraction() {
         InterprocCallPlanner interprocCallPlanner = mock(InterprocCallPlanner.class);
         when(interprocCallPlanner.plan(any(), any(), any(), any())).thenReturn(Optional.empty());

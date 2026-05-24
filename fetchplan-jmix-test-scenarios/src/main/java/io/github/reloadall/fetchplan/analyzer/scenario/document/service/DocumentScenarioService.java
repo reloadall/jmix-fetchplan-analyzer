@@ -18,6 +18,7 @@ public class DocumentScenarioService {
     private final LineReadService lineReadService;
     private final RecordRepository recordRepository;
     private final List<DocumentWorker> workers;
+    private UnresolvedDocumentWorker unresolvedWorker;
 
     @Autowired
     public DocumentScenarioService(DocumentTypeReadService documentTypeReadService,
@@ -96,6 +97,33 @@ public class DocumentScenarioService {
                 .map(io.github.reloadall.fetchplan.analyzer.scenario.document.entity.Product::getSku);
     }
 
+    public void inspectDocumentWithStreamMapComputedGetter(Document document) {
+        document.getLines()
+                .stream()
+                .map(DocumentLine::getCodeAsEnum)
+                .toList();
+    }
+
+    public void inspectDocumentWithCollectionForEachLambda(Document document) {
+        document.getLines()
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamForEachLambda(Document document) {
+        document.getLines()
+                .stream()
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamForEachBlockLambda(Document document) {
+        document.getLines()
+                .stream()
+                .forEach(line -> {
+                    line.getProduct().getSku();
+                    line.getQuantity();
+                });
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
@@ -105,6 +133,10 @@ public class DocumentScenarioService {
         for (DocumentWorker worker : workers) {
             worker.process(document);
         }
+    }
+
+    public void inspectDocumentWithUnresolvedWorker(Document document) {
+        unresolvedWorker.process(document.getContract());
     }
 
     public void inspectDocumentWithGetterArguments(Document document) {

@@ -3,8 +3,6 @@ archivesBaseName = 'fetchplan-jmix'
 dependencies {
     implementation 'io.jmix.core:jmix-core-starter'
     implementation 'io.jmix.data:jmix-eclipselink-starter'
-    implementation 'io.jmix.ui:jmix-ui-starter'
-    implementation 'io.jmix.ui:jmix-ui-themes'
     implementation 'com.github.javaparser:javaparser-core:3.27.0'
     implementation 'com.github.javaparser:javaparser-symbol-solver-core:3.27.0'
 

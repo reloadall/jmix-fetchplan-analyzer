@@ -59,6 +59,19 @@ public final class DocumentScenarioExpectedPaths {
             "lines.product.sku"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_COLLECTION_FOR_EACH_LAMBDA = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_LAMBDA = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"

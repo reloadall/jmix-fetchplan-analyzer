@@ -14,6 +14,8 @@
 - alias rebinding through local variables
 - cast-based continuation
 - `stream().map(MethodRef)` with basic pass-through methods
+- narrow collection/stream `forEach(lambda)` body extraction for root-derived entity collections when the lambda has one
+  parameter and contains direct getter-chain expression reads
 - top-level method calls
 - `UNKNOWN_BREAK`
 
@@ -33,6 +35,8 @@
 - root-entity getter reads inside top-level method-call arguments, including narrow wrapper/pass-through argument shapes such as
   `IdLike.of(document.getContract())`, when the relevant fetch-plan usage is the pre-boundary reference anchor rather than
   repository/result internals
+- unresolved path-relevant `void` interface/service calls are surfaced as uncertainty when the target declaration is found
+  but has no analyzable body, with `UNKNOWN_BREAK` attached to resolved argument path anchors where possible
 
 ### Output layers
 
@@ -54,6 +58,9 @@
 - dynamic proxies with ambiguous runtime targets
 - general collection-injected Spring bean dispatch beyond the narrow foreach pattern;
 - `workers.forEach(...)` and stream/lambda-based worker dispatch;
+- `Map.forEach(...)` and other multi-parameter lambda shapes;
+- arbitrary lambda statements beyond simple expression statements in the supported narrow `forEach(lambda)` body shape;
+- `filter` / `flatMap` / generalized stream pipeline semantics;
 - `supports(...)`-style filtering / selective worker execution;
 - qualifier / `@Primary` / ordering-sensitive worker selection semantics;
 - registry-style worker dispatch such as `Map<String, Worker>`;
@@ -96,6 +103,14 @@ Use it as:
 - a fetch plan relevance detector
 - a source of feedback and unsupported cases
 
+## Source analysis cache lifecycle
+
+`SourceAnalysisCache` is an application-lifetime cache for resolved source roots, class-name-to-source-file lookups,
+and parsed JavaParser `CompilationUnit` instances. The addon does not watch source files or support hot-deploy / hot-reload
+of changed sources inside a running JVM. If analyzed source code changes, the expected usage model is to restart the
+application before running analysis again. For that reason, a manual cache clear/reset MBean operation is intentionally not
+provided.
+
 ## Scenario coverage in `fetchplan-jmix-test-scenarios`
 
 The scenario module now contains focused root methods with separate expected path sets.
@@ -111,10 +126,17 @@ Currently covered by scenario integration:
 - alias chain via `inspectDocumentWithAliasChain(Document document)`.
 - cast-based continuation via `inspectDocumentWithCast(Document document)`.
 - minimal `stream().map(MethodRef)` chain via `inspectDocumentWithStreamMap(Document document)`.
+- narrow collection/stream `forEach(lambda)` getter-chain extraction via:
+  - `inspectDocumentWithCollectionForEachLambda(Document document)` -> `lines.product.sku`;
+  - `inspectDocumentWithStreamForEachLambda(Document document)` -> `lines.product.sku`;
+  - `inspectDocumentWithStreamForEachBlockLambda(Document document)` -> `lines.product.sku`, `lines.quantity`.
 - uncertainty / `UNKNOWN_BREAK` behavior via `inspectDocumentWithUnknownBreak(Document document)`.
 - narrow collection-injected worker fan-out via `inspectDocumentWithWorkers(Document document)` for:
   `for (Worker worker : workers) { worker.process(document); }`
   where `workers` is `List<T>` / `Collection<T>` / `Iterable<T>` and Spring bean implementations are resolved.
+- unresolved worker/service call uncertainty via `inspectDocumentWithUnresolvedWorker(Document document)`, where an
+  interface method with no resolved implementation/body receives a path-relevant argument such as `document.getContract()`;
+  the analyzer keeps `contract` as an analyzed path and reports the call as uncertain instead of treating it as clean.
 - root getter reads inside method-call arguments via
   `DocumentScenarioService.inspectDocumentWithGetterArguments(Document document)`
   where canonical output keeps pre-boundary reads such as `dateStart`, `dateFinish`, `contract`, and `currency`
@@ -153,11 +175,13 @@ Currently covered by scenario integration:
 Still not scenario-covered as supported generalized worker dispatch:
 
 - broader collection-injected worker dispatch beyond the narrow foreach pattern, including `workers.forEach(...)`, stream/lambda dispatch, filtering, qualifier-sensitive selection, and map-based worker registries.
+- generalized stream/lambda semantics beyond the narrow entity getter-read `forEach(lambda)` shape, including
+  `Map.forEach(...)`, multi-parameter lambdas, `filter`/`flatMap` semantics, and arbitrary lambda statements.
 
 Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
-- broader stream semantics beyond the minimal chained method-reference pattern are **not** yet documented as scenario-covered in this module.
+- broader stream semantics beyond the minimal chained method-reference and narrow `forEach(lambda)` getter-read patterns are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 - structural parent/container paths are not emitted merely because deeper descendants exist.
   They are emitted only when the parent property itself was actually accessed under the current policy.

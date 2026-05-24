@@ -270,6 +270,13 @@ public class ExpressionStatementHandler implements StatementHandler {
             return StatementHandleResult.customContinuations(fanOutPlan.get().getTargetMethodContinuations());
         }
 
+        interprocCallPlanner.markUnresolvedPathRelevantCallIfNeeded(
+                rawTree,
+                step,
+                expr,
+                context
+        );
+
         markTerminalUsages(rawTree, step, expr, context);
 
         return StatementHandleResult.continueLinear();
