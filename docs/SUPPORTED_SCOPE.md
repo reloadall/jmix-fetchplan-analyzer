@@ -13,11 +13,23 @@
 - `list.get(0)`
 - alias rebinding through local variables
 - cast-based continuation
-- `stream().map(MethodRef)` with basic pass-through methods
-- narrow collection/stream `forEach(lambda)` body extraction for root-derived entity collections when the lambda has one
-  parameter and contains direct getter-chain expression reads
 - top-level method calls
 - `UNKNOWN_BREAK`
+
+Supported narrow stream patterns:
+
+- `stream().map(MethodRef)` for metadata-backed getter references, with basic pass-through methods;
+- `stream().map(lambda)` for expression body and block `return` body;
+- `collection/stream.forEach(lambda)` for simple body reads;
+- `filter(lambda)` predicate reads;
+- `anyMatch/allMatch/noneMatch(lambda)` predicate reads;
+- `collect(Collectors.toMap(...))` key/value mapper extraction;
+- `collect(Collectors.groupingBy(...))` classifier extraction;
+- terminal `toList` / `count` / `collect(toList/toSet/toUnmodifiableList/toUnmodifiableSet/toCollection)` as stream scope usage;
+- `flatMap(lambda -> nestedCollection.stream())` for root-derived nested collection streams;
+- `sorted(Comparator.comparing(...))` for one-argument key extractors, including `comparingInt/Long/Double` and direct `.reversed()`;
+- terminal `min/max(Comparator.comparing(...))` for one-argument key extractors, including `comparingInt/Long/Double` and direct `.reversed()`;
+- direct `findFirst/findAny().ifPresent(lambda)` Optional bridge with one-parameter lambda and simple expression/block-expression body.
 
 ### Interprocedural patterns
 
@@ -60,7 +72,23 @@
 - `workers.forEach(...)` and stream/lambda-based worker dispatch;
 - `Map.forEach(...)` and other multi-parameter lambda shapes;
 - arbitrary lambda statements beyond simple expression statements in the supported narrow `forEach(lambda)` body shape;
-- `filter` / `flatMap` / generalized stream pipeline semantics;
+- arbitrary stream semantics;
+- arbitrary collectors;
+- `reduce`;
+- downstream collector adapters such as `mapping`, `flatMapping`, or `reducing`;
+- `partitioningBy`;
+- `groupingByConcurrent`;
+- `toConcurrentMap`;
+- generalized `flatMap` semantics beyond the narrow root-derived nested collection stream lambda shape;
+- generalized comparator semantics beyond the narrow `sorted(Comparator.comparing(...))` key-extractor shape,
+  including arbitrary `(a, b) -> ...` comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`, and custom
+  comparator second arguments;
+- general Optional API beyond the narrow `findFirst/findAny().ifPresent(lambda)` bridge, including `Optional.map`,
+  `flatMap`, `filter`, `orElse`, `orElseGet`, `ifPresentOrElse`, local Optional variable rebinding, and
+  `Optional.stream()`;
+- `map(...).findFirst().ifPresent(...)` Optional bridge continuation unless explicitly supported later;
+- service calls inside stream lambdas beyond existing resolver behavior;
+- generalized stream pipeline semantics;
 - `supports(...)`-style filtering / selective worker execution;
 - qualifier / `@Primary` / ordering-sensitive worker selection semantics;
 - registry-style worker dispatch such as `Map<String, Worker>`;
@@ -126,6 +154,55 @@ Currently covered by scenario integration:
 - alias chain via `inspectDocumentWithAliasChain(Document document)`.
 - cast-based continuation via `inspectDocumentWithCast(Document document)`.
 - minimal `stream().map(MethodRef)` chain via `inspectDocumentWithStreamMap(Document document)`.
+- narrow `stream().map(lambda)` expression and block-return extraction via:
+  - `inspectDocumentWithStreamMapLambdaEntityContinuation(Document document)`;
+  - `inspectDocumentWithStreamMapLambdaLeafToList(Document document)`;
+  - `inspectDocumentWithStreamMapLambdaThenFilter(Document document)`;
+  - `inspectDocumentWithStreamMapBlockLambdaEntityContinuation(Document document)`;
+  - `inspectDocumentWithStreamMapBlockLambdaLeafToList(Document document)`;
+  - `inspectDocumentWithStreamMapBlockLambdaPreReturnRead(Document document)`.
+- narrow `filter(lambda)` predicate extraction via:
+  - `inspectDocumentWithStreamFilterLambda(Document document)`;
+  - `inspectDocumentWithStreamFilterMethodCallLambda(Document document)`.
+- narrow `anyMatch/allMatch/noneMatch(lambda)` predicate extraction via:
+  - `inspectDocumentWithStreamAnyMatchLambda(Document document)`;
+  - `inspectDocumentWithStreamAllMatchLambda(Document document)`;
+  - `inspectDocumentWithStreamNoneMatchLambda(Document document)`.
+- narrow `collect(Collectors.toMap(...))` key/value mapper extraction via:
+  - `inspectDocumentWithStreamCollectToMapMethodRefs(Document document)`;
+  - `inspectDocumentWithStreamCollectToMapLambdas(Document document)`;
+  - `inspectDocumentWithStreamCollectToMapMerge(Document document)`;
+  - `inspectDocumentWithStreamCollectToMapIdentityValue(Document document)`.
+- narrow `collect(Collectors.groupingBy(...))` classifier extraction via:
+  - `inspectDocumentWithStreamCollectGroupingByLambda(Document document)`;
+  - `inspectDocumentWithStreamCollectGroupingByMethodRef(Document document)`;
+  - `inspectDocumentWithStreamCollectGroupingByDownstream(Document document)`;
+  - `inspectDocumentWithStreamCollectGroupingBySupplierDownstream(Document document)`.
+- narrow terminal stream scope usage via:
+  - `inspectDocumentWithStreamToListTerminal(Document document)`;
+  - `inspectDocumentWithStreamCountTerminal(Document document)`;
+  - `inspectDocumentWithStreamCollectToListTerminal(Document document)`;
+  - `inspectDocumentWithStreamCollectToSetTerminal(Document document)`;
+  - `inspectDocumentWithStreamCollectToUnmodifiableListTerminal(Document document)`;
+  - `inspectDocumentWithStreamCollectToCollectionTerminal(Document document)`.
+- narrow `stream().flatMap(lambda)` nested collection origin rebinding via:
+  - `inspectDocumentWithStreamFlatMapLambda(Document document)` -> `contracts.lines.product.sku`;
+  - `inspectDocumentWithStreamFlatMapBlockLambda(Document document)` -> `contracts.lines.product.sku`;
+  - `inspectDocumentWithStreamFlatMapToList(Document document)` -> `contracts.lines`.
+- narrow `stream().sorted(Comparator.comparing(...))` comparator key extraction via:
+  - `inspectDocumentWithStreamSortedComparatorLambda(Document document)` -> `lines.product.sku`, `lines.quantity`;
+  - `inspectDocumentWithStreamSortedComparatorMethodRefToList(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamSortedComparatorComparingIntToList(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamSortedComparatorReversedToList(Document document)` -> `lines.product.sku`, `lines`.
+- narrow terminal `stream().min/max(Comparator.comparing(...))` comparator key extraction via:
+  - `inspectDocumentWithStreamMaxComparatorLambda(Document document)` -> `lines.product.sku`, `lines`;
+  - `inspectDocumentWithStreamMinComparatorMethodRef(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamMaxComparatorComparingInt(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamMinComparatorReversed(Document document)` -> `lines.product.sku`, `lines`.
+- narrow `findFirst/findAny().ifPresent(lambda)` Optional bridge via:
+  - `inspectDocumentWithStreamFindFirstIfPresentAfterFilter(Document document)` -> `lines.quantity`, `lines.product.sku`;
+  - `inspectDocumentWithStreamFindAnyIfPresent(Document document)` -> `lines.product.sku`;
+  - `inspectDocumentWithStreamFindFirstIfPresentBlock(Document document)` -> `lines.product.sku`, `lines.quantity`.
 - narrow collection/stream `forEach(lambda)` getter-chain extraction via:
   - `inspectDocumentWithCollectionForEachLambda(Document document)` -> `lines.product.sku`;
   - `inspectDocumentWithStreamForEachLambda(Document document)` -> `lines.product.sku`;
@@ -175,13 +252,15 @@ Currently covered by scenario integration:
 Still not scenario-covered as supported generalized worker dispatch:
 
 - broader collection-injected worker dispatch beyond the narrow foreach pattern, including `workers.forEach(...)`, stream/lambda dispatch, filtering, qualifier-sensitive selection, and map-based worker registries.
-- generalized stream/lambda semantics beyond the narrow entity getter-read `forEach(lambda)` shape, including
-  `Map.forEach(...)`, multi-parameter lambdas, `filter`/`flatMap` semantics, and arbitrary lambda statements.
+- generalized stream/lambda semantics beyond the narrow supported shapes, including
+  `Map.forEach(...)`, multi-parameter lambdas, generalized `flatMap` semantics, and arbitrary lambda statements.
 
 Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
-- broader stream semantics beyond the minimal chained method-reference and narrow `forEach(lambda)` getter-read patterns are **not** yet documented as scenario-covered in this module.
+- broader stream semantics beyond the documented narrow `map`, `forEach`, `filter`/match/collector, terminal scope, and
+  root-derived nested collection `flatMap(lambda)` / sorted and min/max comparator key-extractor / findFirst-findAny
+  `ifPresent(lambda)` bridge patterns are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 - structural parent/container paths are not emitted merely because deeper descendants exist.
   They are emitted only when the parent property itself was actually accessed under the current policy.

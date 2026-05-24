@@ -37,6 +37,9 @@ public class Document {
     @JoinColumn(name = "CONTRACT_ID")
     private Contract contract;
 
+    @OneToMany(mappedBy = "document")
+    private List<Contract> contracts;
+
     @Column(name = "DATE_START")
     private LocalDate dateStart;
 
@@ -85,6 +88,14 @@ public class Document {
 
     public void setContract(Contract contract) {
         this.contract = contract;
+    }
+
+    public List<Contract> getContracts() {
+        return contracts;
+    }
+
+    public void setContracts(List<Contract> contracts) {
+        this.contracts = contracts;
     }
 
     public LocalDate getDateStart() {

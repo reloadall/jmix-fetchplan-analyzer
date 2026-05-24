@@ -11,9 +11,9 @@ import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-@Component("fpa_ForEachLambdaExpressionHandler")
-@Order(165)
-public class ForEachLambdaExpressionHandler implements ExpressionHandler {
+@Component("fpa_FilterLambdaExpressionHandler")
+@Order(166)
+public class FilterLambdaExpressionHandler implements ExpressionHandler {
 
     private final LambdaElementBindingSupport lambdaSupport = new LambdaElementBindingSupport();
 
@@ -24,7 +24,7 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
         }
 
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
-        return "forEach".equals(methodCallExpr.getNameAsString())
+        return "filter".equals(methodCallExpr.getNameAsString())
                 && methodCallExpr.getScope().isPresent()
                 && methodCallExpr.getArguments().size() == 1
                 && methodCallExpr.getArgument(0).isLambdaExpr()
@@ -58,7 +58,7 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
         );
         ExpressionResolutionResult bodyResult = lambdaSupport.resolveLambdaBody(rawTree, lambdaStep, lambdaExpr, context);
         markTerminal(bodyResult);
-        return new ExpressionResolutionResult(bodyResult.getNodes(), scopeResult.isUncertain() || bodyResult.isUncertain());
+        return new ExpressionResolutionResult(scopeResult.getNodes(), scopeResult.isUncertain() || bodyResult.isUncertain());
     }
 
     private void markTerminal(ExpressionResolutionResult result) {

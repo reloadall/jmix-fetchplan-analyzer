@@ -11,9 +11,9 @@ import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-@Component("fpa_ForEachLambdaExpressionHandler")
-@Order(165)
-public class ForEachLambdaExpressionHandler implements ExpressionHandler {
+@Component("fpa_StreamMapLambdaExpressionHandler")
+@Order(161)
+public class StreamMapLambdaExpressionHandler implements ExpressionHandler {
 
     private final LambdaElementBindingSupport lambdaSupport = new LambdaElementBindingSupport();
 
@@ -24,11 +24,12 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
         }
 
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
-        return "forEach".equals(methodCallExpr.getNameAsString())
+        return "map".equals(methodCallExpr.getNameAsString())
                 && methodCallExpr.getScope().isPresent()
                 && methodCallExpr.getArguments().size() == 1
                 && methodCallExpr.getArgument(0).isLambdaExpr()
-                && methodCallExpr.getArgument(0).asLambdaExpr().getParameters().size() == 1;
+                && methodCallExpr.getArgument(0).asLambdaExpr().getParameters().size() == 1
+                && isSupportedLambdaBody(methodCallExpr.getArgument(0).asLambdaExpr());
     }
 
     @Override
@@ -56,9 +57,29 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
                 scopeElements.elementNodes(),
                 scopeResult.isUncertain()
         );
-        ExpressionResolutionResult bodyResult = lambdaSupport.resolveLambdaBody(rawTree, lambdaStep, lambdaExpr, context);
-        markTerminal(bodyResult);
-        return new ExpressionResolutionResult(bodyResult.getNodes(), scopeResult.isUncertain() || bodyResult.isUncertain());
+        LambdaElementBindingSupport.LambdaReturnResult lambdaReturnResult = lambdaSupport.resolveLambdaReturnBody(
+                rawTree,
+                lambdaStep,
+                lambdaExpr,
+                context
+        );
+        markTerminal(lambdaReturnResult.preReturnReads());
+        ExpressionResolutionResult returnedResult = lambdaReturnResult.returnedResult();
+        return new ExpressionResolutionResult(
+                returnedResult.getNodes(),
+                scopeResult.isUncertain()
+                        || returnedResult.isUncertain()
+                        || lambdaReturnResult.preReturnReads().isUncertain()
+        );
+    }
+
+    private boolean isSupportedLambdaBody(LambdaExpr lambdaExpr) {
+        if (lambdaExpr.getBody().isExpressionStmt()) {
+            return true;
+        }
+
+        return lambdaExpr.getBody().isBlockStmt()
+                && lambdaExpr.getBody().asBlockStmt().getStatements().stream().anyMatch(statement -> statement.isReturnStmt());
     }
 
     private void markTerminal(ExpressionResolutionResult result) {

@@ -1,5 +1,7 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
+import java.util.Set;
+
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -11,9 +13,11 @@ import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-@Component("fpa_ForEachLambdaExpressionHandler")
-@Order(165)
-public class ForEachLambdaExpressionHandler implements ExpressionHandler {
+@Component("fpa_StreamMatchLambdaExpressionHandler")
+@Order(167)
+public class StreamMatchLambdaExpressionHandler implements ExpressionHandler {
+
+    private static final Set<String> MATCH_METHOD_NAMES = Set.of("anyMatch", "allMatch", "noneMatch");
 
     private final LambdaElementBindingSupport lambdaSupport = new LambdaElementBindingSupport();
 
@@ -24,7 +28,7 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
         }
 
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
-        return "forEach".equals(methodCallExpr.getNameAsString())
+        return MATCH_METHOD_NAMES.contains(methodCallExpr.getNameAsString())
                 && methodCallExpr.getScope().isPresent()
                 && methodCallExpr.getArguments().size() == 1
                 && methodCallExpr.getArgument(0).isLambdaExpr()

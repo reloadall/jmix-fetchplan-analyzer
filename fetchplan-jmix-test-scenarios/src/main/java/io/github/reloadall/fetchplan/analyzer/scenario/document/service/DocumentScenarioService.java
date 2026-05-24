@@ -104,6 +104,56 @@ public class DocumentScenarioService {
                 .toList();
     }
 
+    public void inspectDocumentWithStreamMapLambdaEntityContinuation(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> line.getProduct())
+                .forEach(product -> product.getSku());
+    }
+
+    public void inspectDocumentWithStreamMapLambdaLeafToList(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> line.getProduct().getSku())
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamMapLambdaThenFilter(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> line.getProduct())
+                .filter(product -> product.getCategory().getCode().equals("A"))
+                .forEach(product -> product.getSku());
+    }
+
+    public void inspectDocumentWithStreamMapBlockLambdaEntityContinuation(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> {
+                    return line.getProduct();
+                })
+                .forEach(product -> product.getSku());
+    }
+
+    public void inspectDocumentWithStreamMapBlockLambdaLeafToList(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> {
+                    return line.getProduct().getSku();
+                })
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamMapBlockLambdaPreReturnRead(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> {
+                    line.getProduct().getCategory().getCode();
+                    return line.getProduct();
+                })
+                .forEach(product -> product.getSku());
+    }
+
     public void inspectDocumentWithCollectionForEachLambda(Document document) {
         document.getLines()
                 .forEach(line -> line.getProduct().getSku());
@@ -119,6 +169,246 @@ public class DocumentScenarioService {
         document.getLines()
                 .stream()
                 .forEach(line -> {
+                    line.getProduct().getSku();
+                    line.getQuantity();
+                });
+    }
+
+    public void inspectDocumentWithStreamFilterLambda(Document document) {
+        document.getLines()
+                .stream()
+                .filter(line -> line.getProduct().getSku() != null)
+                .forEach(line -> line.getQuantity());
+    }
+
+    public void inspectDocumentWithStreamFilterMethodCallLambda(Document document) {
+        document.getLines()
+                .stream()
+                .filter(line -> line.getProduct().getCategory().getCode().equals("A"))
+                .forEach(line -> line.getQuantity());
+    }
+
+    public void inspectDocumentWithStreamAnyMatchLambda(Document document) {
+        document.getLines()
+                .stream()
+                .anyMatch(line -> line.getProduct().getSku() != null);
+    }
+
+    public void inspectDocumentWithStreamAllMatchLambda(Document document) {
+        document.getLines()
+                .stream()
+                .allMatch(line -> line.getProduct().getCategory().getCode().equals("A"));
+    }
+
+    public void inspectDocumentWithStreamNoneMatchLambda(Document document) {
+        document.getLines()
+                .stream()
+                .noneMatch(line -> line.getQuantity() == 0);
+    }
+
+    public void inspectDocumentWithStreamCollectToMapMethodRefs(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        DocumentLine::getProduct,
+                        DocumentLine::getQuantity
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectToMapLambdas(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        line -> line.getProduct().getSku(),
+                        line -> line.getQuantity()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectToMapMerge(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        line -> line.getProduct().getSku(),
+                        line -> line.getQuantity(),
+                        (a, b) -> a
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectToMapIdentityValue(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        line -> line.getProduct().getSku(),
+                        java.util.function.Function.identity()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingByLambda(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        line -> line.getProduct().getCategory().getCode()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingByMethodRef(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        DocumentLine::getProduct
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingByDownstream(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        line -> line.getProduct().getCategory().getCode(),
+                        java.util.stream.Collectors.toList()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingBySupplierDownstream(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        line -> line.getProduct().getCategory().getCode(),
+                        java.util.HashMap::new,
+                        java.util.stream.Collectors.toList()
+                ));
+    }
+
+    public void inspectDocumentWithStreamToListTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamCountTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .count();
+    }
+
+    public void inspectDocumentWithStreamCollectToListTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void inspectDocumentWithStreamCollectToSetTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    public void inspectDocumentWithStreamCollectToUnmodifiableListTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableList());
+    }
+
+    public void inspectDocumentWithStreamCollectToCollectionTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+    }
+
+    public void inspectDocumentWithStreamFlatMapLambda(Document document) {
+        document.getContracts()
+                .stream()
+                .flatMap(contract -> contract.getLines().stream())
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFlatMapBlockLambda(Document document) {
+        document.getContracts()
+                .stream()
+                .flatMap(contract -> {
+                    return contract.getLines().stream();
+                })
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFlatMapToList(Document document) {
+        document.getContracts()
+                .stream()
+                .flatMap(contract -> contract.getLines().stream())
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamSortedComparatorLambda(Document document) {
+        document.getLines()
+                .stream()
+                .sorted(java.util.Comparator.comparing(line -> line.getProduct().getSku()))
+                .forEach(line -> line.getQuantity());
+    }
+
+    public void inspectDocumentWithStreamSortedComparatorMethodRefToList(Document document) {
+        document.getLines()
+                .stream()
+                .sorted(java.util.Comparator.comparing(DocumentLine::getQuantity))
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamSortedComparatorComparingIntToList(Document document) {
+        document.getLines()
+                .stream()
+                .sorted(java.util.Comparator.comparingInt(DocumentLine::getQuantity))
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamSortedComparatorReversedToList(Document document) {
+        document.getLines()
+                .stream()
+                .sorted(java.util.Comparator.comparing((DocumentLine line) -> line.getProduct().getSku()).reversed())
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamMaxComparatorLambda(Document document) {
+        document.getLines()
+                .stream()
+                .max(java.util.Comparator.comparing(line -> line.getProduct().getSku()));
+    }
+
+    public void inspectDocumentWithStreamMinComparatorMethodRef(Document document) {
+        document.getLines()
+                .stream()
+                .min(java.util.Comparator.comparing(DocumentLine::getQuantity));
+    }
+
+    public void inspectDocumentWithStreamMaxComparatorComparingInt(Document document) {
+        document.getLines()
+                .stream()
+                .max(java.util.Comparator.comparingInt(DocumentLine::getQuantity));
+    }
+
+    public void inspectDocumentWithStreamMinComparatorReversed(Document document) {
+        document.getLines()
+                .stream()
+                .min(java.util.Comparator.comparing((DocumentLine line) -> line.getProduct().getSku()).reversed());
+    }
+
+    public void inspectDocumentWithStreamFindFirstIfPresentAfterFilter(Document document) {
+        document.getLines()
+                .stream()
+                .filter(line -> line.getQuantity() > 0)
+                .findFirst()
+                .ifPresent(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFindAnyIfPresent(Document document) {
+        document.getLines()
+                .stream()
+                .findAny()
+                .ifPresent(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFindFirstIfPresentBlock(Document document) {
+        document.getLines()
+                .stream()
+                .findFirst()
+                .ifPresent(line -> {
                     line.getProduct().getSku();
                     line.getQuantity();
                 });

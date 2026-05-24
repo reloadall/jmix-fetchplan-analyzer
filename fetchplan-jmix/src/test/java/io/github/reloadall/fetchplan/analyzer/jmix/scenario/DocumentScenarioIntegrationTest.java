@@ -23,12 +23,22 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.CastExpress
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ConditionalExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.EnclosedExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ExpressionResolver;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.FilterLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.ForEachLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.InterprocMethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MapMethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.NameExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.PassThroughMethodCallExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectGroupingByExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectToMapExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamFlatMapLambdaExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMinMaxComparatorExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamOptionalIfPresentExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamSortedComparatorExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamTerminalScopeUsageExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.PassThroughMethodPolicy;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.UnknownBreakPolicy;
@@ -176,6 +186,66 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamMapLambdaEntityContinuationScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapLambdaEntityContinuation",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_ENTITY_CONTINUATION_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapLambdaLeafToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapLambdaLeafToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_LEAF_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapLambdaThenFilterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapLambdaThenFilter",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_LAMBDA_THEN_FILTER_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapBlockLambdaEntityContinuationScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapBlockLambdaEntityContinuation",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_ENTITY_CONTINUATION,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_ENTITY_CONTINUATION_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_ENTITY_CONTINUATION_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapBlockLambdaLeafToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapBlockLambdaLeafToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_LEAF_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_LEAF_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_LEAF_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapBlockLambdaPreReturnReadScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapBlockLambdaPreReturnRead",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_PRE_RETURN_READ,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_PRE_RETURN_READ_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_PRE_RETURN_READ_LEAF_PATHS
+        );
+    }
+
+    @Test
     void analyzesCollectionForEachLambdaScenarioAndMatchesFixturePaths() {
         assertScenario(
                 "inspectDocumentWithCollectionForEachLambda",
@@ -202,6 +272,306 @@ class DocumentScenarioIntegrationTest {
                 DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FOR_EACH_BLOCK_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFilterLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFilterLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFilterMethodCallLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFilterMethodCallLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FILTER_METHOD_CALL_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamAnyMatchLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamAnyMatchLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_ANY_MATCH_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_ANY_MATCH_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_ANY_MATCH_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamAllMatchLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamAllMatchLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_ALL_MATCH_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_ALL_MATCH_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_ALL_MATCH_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamNoneMatchLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamNoneMatchLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_NONE_MATCH_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_NONE_MATCH_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_NONE_MATCH_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapMethodRefsScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapMethodRefs",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_METHOD_REFS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapLambdasScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapLambdas",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_LAMBDAS_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapMergeScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapMerge",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_MERGE_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectToMapIdentityValueScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectToMapIdentityValue",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingByLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingByLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingByMethodRefScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingByMethodRef",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingByDownstreamScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingByDownstream",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingBySupplierDownstreamScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingBySupplierDownstream",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamToListTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamToListTerminal");
+    }
+
+    @Test
+    void analyzesStreamCountTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCountTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToListTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToListTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToSetTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToSetTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToUnmodifiableListTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToUnmodifiableListTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToCollectionTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToCollectionTerminal");
+    }
+
+    @Test
+    void analyzesStreamFlatMapLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFlatMapLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFlatMapBlockLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFlatMapBlockLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFlatMapToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFlatMapToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorMethodRefToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorMethodRefToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorComparingIntToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorComparingIntToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorReversedToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorReversedToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMaxComparatorLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMaxComparatorLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMinComparatorMethodRefScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMinComparatorMethodRef",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMaxComparatorComparingIntScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMaxComparatorComparingInt",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMinComparatorReversedScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMinComparatorReversed",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFindFirstIfPresentAfterFilterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFindFirstIfPresentAfterFilter",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFindAnyIfPresentScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFindAnyIfPresent",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFindFirstIfPresentBlockScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFindFirstIfPresentBlock",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK_LEAF_PATHS
         );
     }
 
@@ -470,6 +840,15 @@ class DocumentScenarioIntegrationTest {
         );
     }
 
+    private void assertTerminalScopeUsageScenario(String methodName) {
+        assertScenario(
+                methodName,
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE_LEAF_PATHS
+        );
+    }
+
     private void assertScenario(String methodName,
                                 Class<?> targetServiceClass,
                                 String rootParameterName,
@@ -547,7 +926,17 @@ class DocumentScenarioIntegrationTest {
                 new NameExpressionHandler(),
                 new CollectionGetExpressionHandler(),
                 new MapMethodCallExpressionHandler(),
+                new StreamMapLambdaExpressionHandler(),
+                new StreamFlatMapLambdaExpressionHandler(),
+                new StreamSortedComparatorExpressionHandler(),
+                new StreamMinMaxComparatorExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
+                new FilterLambdaExpressionHandler(),
+                new StreamMatchLambdaExpressionHandler(),
+                new StreamCollectToMapExpressionHandler(),
+                new StreamCollectGroupingByExpressionHandler(),
+                new StreamTerminalScopeUsageExpressionHandler(),
+                new StreamOptionalIfPresentExpressionHandler(),
                 new PassThroughMethodCallExpressionHandler(new PassThroughMethodPolicy()),
                 new ConditionalExpressionHandler(),
                 new InterprocMethodCallExpressionHandler(

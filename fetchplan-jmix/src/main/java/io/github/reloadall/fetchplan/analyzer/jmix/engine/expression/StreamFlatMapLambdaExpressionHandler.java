@@ -1,19 +1,23 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
+import io.github.reloadall.fetchplan.analyzer.jmix.tree.FlowKind;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-@Component("fpa_ForEachLambdaExpressionHandler")
-@Order(165)
-public class ForEachLambdaExpressionHandler implements ExpressionHandler {
+@Component("fpa_StreamFlatMapLambdaExpressionHandler")
+@Order(162)
+public class StreamFlatMapLambdaExpressionHandler implements ExpressionHandler {
 
     private final LambdaElementBindingSupport lambdaSupport = new LambdaElementBindingSupport();
 
@@ -24,11 +28,12 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
         }
 
         MethodCallExpr methodCallExpr = expression.asMethodCallExpr();
-        return "forEach".equals(methodCallExpr.getNameAsString())
+        return "flatMap".equals(methodCallExpr.getNameAsString())
                 && methodCallExpr.getScope().isPresent()
                 && methodCallExpr.getArguments().size() == 1
                 && methodCallExpr.getArgument(0).isLambdaExpr()
-                && methodCallExpr.getArgument(0).asLambdaExpr().getParameters().size() == 1;
+                && methodCallExpr.getArgument(0).asLambdaExpr().getParameters().size() == 1
+                && StreamCollectorSupport.isSupportedReturnLikeLambdaBody(methodCallExpr.getArgument(0).asLambdaExpr());
     }
 
     @Override
@@ -56,14 +61,32 @@ public class ForEachLambdaExpressionHandler implements ExpressionHandler {
                 scopeElements.elementNodes(),
                 scopeResult.isUncertain()
         );
-        ExpressionResolutionResult bodyResult = lambdaSupport.resolveLambdaBody(rawTree, lambdaStep, lambdaExpr, context);
-        markTerminal(bodyResult);
-        return new ExpressionResolutionResult(bodyResult.getNodes(), scopeResult.isUncertain() || bodyResult.isUncertain());
-    }
+        LambdaElementBindingSupport.LambdaReturnResult lambdaReturnResult = lambdaSupport.resolveLambdaReturnBody(
+                rawTree,
+                lambdaStep,
+                lambdaExpr,
+                context
+        );
+        StreamCollectorSupport.markTerminal(lambdaReturnResult.preReturnReads());
 
-    private void markTerminal(ExpressionResolutionResult result) {
-        for (RawNode node : result.getNodes()) {
-            node.setUsageKind(UsageKind.TERMINAL);
+        ExpressionResolutionResult returnedResult = lambdaReturnResult.returnedResult();
+        Set<RawNode> flatMappedElementNodes = new LinkedHashSet<>();
+        for (RawNode returnedNode : returnedResult.getNodes()) {
+            RawNode elementNode = rawTree.addChild(
+                    returnedNode,
+                    null,
+                    FlowKind.COLLECTION_ELEMENT,
+                    null,
+                    UsageKind.INTERMEDIATE
+            );
+            flatMappedElementNodes.add(elementNode);
         }
+
+        return new ExpressionResolutionResult(
+                flatMappedElementNodes,
+                scopeResult.isUncertain()
+                        || returnedResult.isUncertain()
+                        || lambdaReturnResult.preReturnReads().isUncertain()
+        );
     }
 }
