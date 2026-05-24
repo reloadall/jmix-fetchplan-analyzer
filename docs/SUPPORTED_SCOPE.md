@@ -14,6 +14,8 @@
 - alias rebinding through local variables
 - cast-based continuation
 - `stream().map(MethodRef)` with basic pass-through methods
+- narrow `stream().flatMap(lambda)` support when a one-parameter lambda returns a root-derived nested collection stream
+  such as `contract -> contract.getLines().stream()`
 - narrow collection/stream `forEach(lambda)` body extraction for root-derived entity collections when the lambda has one
   parameter and contains direct getter-chain expression reads
 - top-level method calls
@@ -60,7 +62,8 @@
 - `workers.forEach(...)` and stream/lambda-based worker dispatch;
 - `Map.forEach(...)` and other multi-parameter lambda shapes;
 - arbitrary lambda statements beyond simple expression statements in the supported narrow `forEach(lambda)` body shape;
-- `filter` / `flatMap` / generalized stream pipeline semantics;
+- generalized `flatMap` semantics beyond the narrow root-derived nested collection stream lambda shape;
+- generalized stream pipeline semantics;
 - `supports(...)`-style filtering / selective worker execution;
 - qualifier / `@Primary` / ordering-sensitive worker selection semantics;
 - registry-style worker dispatch such as `Map<String, Worker>`;
@@ -126,6 +129,10 @@ Currently covered by scenario integration:
 - alias chain via `inspectDocumentWithAliasChain(Document document)`.
 - cast-based continuation via `inspectDocumentWithCast(Document document)`.
 - minimal `stream().map(MethodRef)` chain via `inspectDocumentWithStreamMap(Document document)`.
+- narrow `stream().flatMap(lambda)` nested collection origin rebinding via:
+  - `inspectDocumentWithStreamFlatMapLambda(Document document)` -> `contracts.lines.product.sku`;
+  - `inspectDocumentWithStreamFlatMapBlockLambda(Document document)` -> `contracts.lines.product.sku`;
+  - `inspectDocumentWithStreamFlatMapToList(Document document)` -> `contracts.lines`.
 - narrow collection/stream `forEach(lambda)` getter-chain extraction via:
   - `inspectDocumentWithCollectionForEachLambda(Document document)` -> `lines.product.sku`;
   - `inspectDocumentWithStreamForEachLambda(Document document)` -> `lines.product.sku`;
@@ -175,13 +182,14 @@ Currently covered by scenario integration:
 Still not scenario-covered as supported generalized worker dispatch:
 
 - broader collection-injected worker dispatch beyond the narrow foreach pattern, including `workers.forEach(...)`, stream/lambda dispatch, filtering, qualifier-sensitive selection, and map-based worker registries.
-- generalized stream/lambda semantics beyond the narrow entity getter-read `forEach(lambda)` shape, including
-  `Map.forEach(...)`, multi-parameter lambdas, `filter`/`flatMap` semantics, and arbitrary lambda statements.
+- generalized stream/lambda semantics beyond the narrow supported shapes, including
+  `Map.forEach(...)`, multi-parameter lambdas, generalized `flatMap` semantics, and arbitrary lambda statements.
 
 Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
-- broader stream semantics beyond the minimal chained method-reference and narrow `forEach(lambda)` getter-read patterns are **not** yet documented as scenario-covered in this module.
+- broader stream semantics beyond the documented narrow `map`, `forEach`, `filter`/match/collector, terminal scope, and
+  root-derived nested collection `flatMap(lambda)` patterns are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 - structural parent/container paths are not emitted merely because deeper descendants exist.
   They are emitted only when the parent property itself was actually accessed under the current policy.

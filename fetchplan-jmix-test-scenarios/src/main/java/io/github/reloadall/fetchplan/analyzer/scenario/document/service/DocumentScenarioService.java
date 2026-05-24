@@ -314,6 +314,29 @@ public class DocumentScenarioService {
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
     }
 
+    public void inspectDocumentWithStreamFlatMapLambda(Document document) {
+        document.getContracts()
+                .stream()
+                .flatMap(contract -> contract.getLines().stream())
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFlatMapBlockLambda(Document document) {
+        document.getContracts()
+                .stream()
+                .flatMap(contract -> {
+                    return contract.getLines().stream();
+                })
+                .forEach(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFlatMapToList(Document document) {
+        document.getContracts()
+                .stream()
+                .flatMap(contract -> contract.getLines().stream())
+                .toList();
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();

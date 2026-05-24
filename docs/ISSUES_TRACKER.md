@@ -356,13 +356,18 @@ Status values used below:
 - Area: stream expression support / scenario integration
 - Found during: adding `inspectDocumentWithStreamMap(Document document)`
 - Summary:
-  Scenario coverage now exercises a narrow supported stream case using chained method references, but this must not be overstated as general stream support.
-- Evidence:
-  `MapMethodCallExpressionHandler` supports only `map(...)` with exactly one `MethodReferenceExpr`, while `PassThroughMethodCallExpressionHandler` only forwards a small set of stream-like methods.
-- Current covered case:
-  `document.getLines().stream().map(DocumentLine::getProduct).map(Product::getSku)` -> `lines.product.sku`.
+  Stream support started as a narrow chained method-reference `map` scenario and has grown incrementally through focused
+  scenarios. Current scenario coverage includes lambda `map`, `filter`/match, collector handlers, terminal scope usage,
+  and a narrow root-derived nested collection `flatMap(lambda)` shape.
+- Latest flatMap-covered cases:
+  - `document.getContracts().stream().flatMap(contract -> contract.getLines().stream()).forEach(line -> line.getProduct().getSku())`
+    -> `contracts.lines.product.sku`;
+  - block lambda with `return contract.getLines().stream()` -> `contracts.lines.product.sku`;
+  - `flatMap(...).toList()` -> `contracts.lines`.
 - Remaining limitation:
-  Lambda-based terminal operations such as `forEach(product -> product.getSku())` and broader stream semantics are still not guaranteed by this coverage.
+  This is still not generalized stream semantics. Arbitrary `flatMap`, `Optional.stream`, service calls inside flatMap
+  lambdas beyond existing resolver behavior, multi-parameter lambdas, and unrelated stream operations remain unsupported
+  unless explicitly covered by focused scenarios.
 
 ---
 

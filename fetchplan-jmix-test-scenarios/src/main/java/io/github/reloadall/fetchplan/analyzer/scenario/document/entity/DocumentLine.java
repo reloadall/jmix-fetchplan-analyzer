@@ -33,6 +33,10 @@ public class DocumentLine {
     @JoinColumn(name = "DOCUMENT_ID")
     private Document document;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CONTRACT_ID")
+    private Contract contract;
+
     public UUID getId() {
         return id;
     }
@@ -63,6 +67,14 @@ public class DocumentLine {
 
     public void setDocument(Document document) {
         this.document = document;
+    }
+
+    public Contract getContract() {
+        return contract;
+    }
+
+    public void setContract(Contract contract) {
+        this.contract = contract;
     }
 
     public CodeKind getCodeAsEnum() {

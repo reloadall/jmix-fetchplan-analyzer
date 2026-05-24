@@ -160,6 +160,18 @@ public final class DocumentScenarioExpectedPaths {
             "lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA = Set.of(
+            "contracts.lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA = Set.of(
+            "contracts.lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST = Set.of(
+            "contracts.lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"

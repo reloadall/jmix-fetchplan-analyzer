@@ -32,6 +32,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.NameExpress
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.PassThroughMethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectGroupingByExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectToMapExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamFlatMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamTerminalScopeUsageExpressionHandler;
@@ -432,6 +433,36 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamFlatMapLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFlatMapLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFlatMapBlockLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFlatMapBlockLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_BLOCK_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFlatMapToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFlatMapToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FLAT_MAP_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
     void analyzesUnknownBreakScenarioAndReportsUncertainty() {
         ScenarioResult result = analyzeScenario(
                 "inspectDocumentWithUnknownBreak",
@@ -783,6 +814,7 @@ class DocumentScenarioIntegrationTest {
                 new CollectionGetExpressionHandler(),
                 new MapMethodCallExpressionHandler(),
                 new StreamMapLambdaExpressionHandler(),
+                new StreamFlatMapLambdaExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),
