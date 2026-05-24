@@ -156,6 +156,10 @@ public final class DocumentScenarioExpectedPaths {
             "lines.product.category.code"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE = Set.of(
+            "lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"

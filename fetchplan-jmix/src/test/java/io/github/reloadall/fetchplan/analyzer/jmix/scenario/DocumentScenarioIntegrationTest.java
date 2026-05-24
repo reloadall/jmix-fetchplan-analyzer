@@ -34,6 +34,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamColle
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectToMapExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamTerminalScopeUsageExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.PassThroughMethodPolicy;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.UnknownBreakPolicy;
@@ -401,6 +402,36 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamToListTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamToListTerminal");
+    }
+
+    @Test
+    void analyzesStreamCountTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCountTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToListTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToListTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToSetTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToSetTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToUnmodifiableListTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToUnmodifiableListTerminal");
+    }
+
+    @Test
+    void analyzesStreamCollectToCollectionTerminalScenarioAndMatchesFixturePaths() {
+        assertTerminalScopeUsageScenario("inspectDocumentWithStreamCollectToCollectionTerminal");
+    }
+
+    @Test
     void analyzesUnknownBreakScenarioAndReportsUncertainty() {
         ScenarioResult result = analyzeScenario(
                 "inspectDocumentWithUnknownBreak",
@@ -665,6 +696,15 @@ class DocumentScenarioIntegrationTest {
         );
     }
 
+    private void assertTerminalScopeUsageScenario(String methodName) {
+        assertScenario(
+                methodName,
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE_LEAF_PATHS
+        );
+    }
+
     private void assertScenario(String methodName,
                                 Class<?> targetServiceClass,
                                 String rootParameterName,
@@ -748,6 +788,7 @@ class DocumentScenarioIntegrationTest {
                 new StreamMatchLambdaExpressionHandler(),
                 new StreamCollectToMapExpressionHandler(),
                 new StreamCollectGroupingByExpressionHandler(),
+                new StreamTerminalScopeUsageExpressionHandler(),
                 new PassThroughMethodCallExpressionHandler(new PassThroughMethodPolicy()),
                 new ConditionalExpressionHandler(),
                 new InterprocMethodCallExpressionHandler(

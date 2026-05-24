@@ -372,6 +372,14 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines.product.category.code"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE_ALL_PATHS = Set.of(
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_TERMINAL_SCOPE_USAGE_LEAF_PATHS = Set.of(
+            "lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",

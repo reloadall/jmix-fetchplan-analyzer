@@ -278,6 +278,42 @@ public class DocumentScenarioService {
                 ));
     }
 
+    public void inspectDocumentWithStreamToListTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamCountTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .count();
+    }
+
+    public void inspectDocumentWithStreamCollectToListTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void inspectDocumentWithStreamCollectToSetTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    public void inspectDocumentWithStreamCollectToUnmodifiableListTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableList());
+    }
+
+    public void inspectDocumentWithStreamCollectToCollectionTerminal(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
