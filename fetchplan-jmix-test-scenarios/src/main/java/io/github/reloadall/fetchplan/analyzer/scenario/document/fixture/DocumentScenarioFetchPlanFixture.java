@@ -411,6 +411,49 @@ public final class DocumentScenarioFetchPlanFixture {
             "contracts.lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST_ALL_PATHS = Set.of(
+            "lines",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST_LEAF_PATHS = Set.of(
+            "lines",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST_ALL_PATHS = Set.of(
+            "lines",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST_LEAF_PATHS = Set.of(
+            "lines",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",

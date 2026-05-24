@@ -172,6 +172,26 @@ public final class DocumentScenarioExpectedPaths {
             "contracts.lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST = Set.of(
+            "lines.quantity",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST = Set.of(
+            "lines.quantity",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST = Set.of(
+            "lines.product.sku",
+            "lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"

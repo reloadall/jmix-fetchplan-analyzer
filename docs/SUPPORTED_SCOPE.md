@@ -16,6 +16,9 @@
 - `stream().map(MethodRef)` with basic pass-through methods
 - narrow `stream().flatMap(lambda)` support when a one-parameter lambda returns a root-derived nested collection stream
   such as `contract -> contract.getLines().stream()`
+- narrow `stream().sorted(Comparator.comparing(...))` support for one-argument key extractors over root-derived
+  entity streams, including `comparing`, `comparingInt`, `comparingLong`, `comparingDouble`, and a direct
+  `.reversed()` wrapper around those calls
 - narrow collection/stream `forEach(lambda)` body extraction for root-derived entity collections when the lambda has one
   parameter and contains direct getter-chain expression reads
 - top-level method calls
@@ -63,6 +66,9 @@
 - `Map.forEach(...)` and other multi-parameter lambda shapes;
 - arbitrary lambda statements beyond simple expression statements in the supported narrow `forEach(lambda)` body shape;
 - generalized `flatMap` semantics beyond the narrow root-derived nested collection stream lambda shape;
+- generalized comparator semantics beyond the narrow `sorted(Comparator.comparing(...))` key-extractor shape,
+  including arbitrary `(a, b) -> ...` comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`, and custom
+  comparator second arguments;
 - generalized stream pipeline semantics;
 - `supports(...)`-style filtering / selective worker execution;
 - qualifier / `@Primary` / ordering-sensitive worker selection semantics;
@@ -133,6 +139,11 @@ Currently covered by scenario integration:
   - `inspectDocumentWithStreamFlatMapLambda(Document document)` -> `contracts.lines.product.sku`;
   - `inspectDocumentWithStreamFlatMapBlockLambda(Document document)` -> `contracts.lines.product.sku`;
   - `inspectDocumentWithStreamFlatMapToList(Document document)` -> `contracts.lines`.
+- narrow `stream().sorted(Comparator.comparing(...))` comparator key extraction via:
+  - `inspectDocumentWithStreamSortedComparatorLambda(Document document)` -> `lines.product.sku`, `lines.quantity`;
+  - `inspectDocumentWithStreamSortedComparatorMethodRefToList(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamSortedComparatorComparingIntToList(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamSortedComparatorReversedToList(Document document)` -> `lines.product.sku`, `lines`.
 - narrow collection/stream `forEach(lambda)` getter-chain extraction via:
   - `inspectDocumentWithCollectionForEachLambda(Document document)` -> `lines.product.sku`;
   - `inspectDocumentWithStreamForEachLambda(Document document)` -> `lines.product.sku`;
@@ -189,7 +200,8 @@ Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the documented narrow `map`, `forEach`, `filter`/match/collector, terminal scope, and
-  root-derived nested collection `flatMap(lambda)` patterns are **not** yet documented as scenario-covered in this module.
+  root-derived nested collection `flatMap(lambda)` / sorted comparator key-extractor patterns are **not** yet documented
+  as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 - structural parent/container paths are not emitted merely because deeper descendants exist.
   They are emitted only when the parent property itself was actually accessed under the current policy.

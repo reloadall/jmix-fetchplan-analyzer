@@ -35,6 +35,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamColle
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamFlatMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamSortedComparatorExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamTerminalScopeUsageExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.policy.PassThroughMethodPolicy;
@@ -463,6 +464,46 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamSortedComparatorLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorMethodRefToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorMethodRefToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_METHOD_REF_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorComparingIntToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorComparingIntToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_COMPARING_INT_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamSortedComparatorReversedToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamSortedComparatorReversedToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_SORTED_COMPARATOR_REVERSED_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
     void analyzesUnknownBreakScenarioAndReportsUncertainty() {
         ScenarioResult result = analyzeScenario(
                 "inspectDocumentWithUnknownBreak",
@@ -815,6 +856,7 @@ class DocumentScenarioIntegrationTest {
                 new MapMethodCallExpressionHandler(),
                 new StreamMapLambdaExpressionHandler(),
                 new StreamFlatMapLambdaExpressionHandler(),
+                new StreamSortedComparatorExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),

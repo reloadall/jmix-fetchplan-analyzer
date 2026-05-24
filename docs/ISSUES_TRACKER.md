@@ -364,10 +364,17 @@ Status values used below:
     -> `contracts.lines.product.sku`;
   - block lambda with `return contract.getLines().stream()` -> `contracts.lines.product.sku`;
   - `flatMap(...).toList()` -> `contracts.lines`.
+- Latest sorted-comparator-covered cases:
+  - `document.getLines().stream().sorted(Comparator.comparing(line -> line.getProduct().getSku())).forEach(line -> line.getQuantity())`
+    -> `lines.product.sku`, `lines.quantity`;
+  - `sorted(Comparator.comparing(DocumentLine::getQuantity)).toList()` -> `lines.quantity`, `lines`;
+  - `sorted(Comparator.comparingInt(DocumentLine::getQuantity)).toList()` -> `lines.quantity`, `lines`;
+  - direct `Comparator.comparing(...).reversed()` wrapper -> `lines.product.sku`, `lines`.
 - Remaining limitation:
   This is still not generalized stream semantics. Arbitrary `flatMap`, `Optional.stream`, service calls inside flatMap
-  lambdas beyond existing resolver behavior, multi-parameter lambdas, and unrelated stream operations remain unsupported
-  unless explicitly covered by focused scenarios.
+  lambdas beyond existing resolver behavior, arbitrary comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`,
+  custom comparator second arguments, multi-parameter lambdas, and unrelated stream operations remain unsupported unless
+  explicitly covered by focused scenarios.
 
 ---
 
