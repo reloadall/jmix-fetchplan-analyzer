@@ -209,6 +209,36 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamMapBlockLambdaEntityContinuationScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapBlockLambdaEntityContinuation",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_ENTITY_CONTINUATION,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_ENTITY_CONTINUATION_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_ENTITY_CONTINUATION_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapBlockLambdaLeafToListScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapBlockLambdaLeafToList",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_LEAF_TO_LIST,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_LEAF_TO_LIST_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_LEAF_TO_LIST_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMapBlockLambdaPreReturnReadScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMapBlockLambdaPreReturnRead",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_PRE_RETURN_READ,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_PRE_RETURN_READ_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAP_BLOCK_LAMBDA_PRE_RETURN_READ_LEAF_PATHS
+        );
+    }
+
+    @Test
     void analyzesCollectionForEachLambdaScenarioAndMatchesFixturePaths() {
         assertScenario(
                 "inspectDocumentWithCollectionForEachLambda",

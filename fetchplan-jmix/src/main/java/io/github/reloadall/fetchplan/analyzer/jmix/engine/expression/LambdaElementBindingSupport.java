@@ -102,6 +102,54 @@ class LambdaElementBindingSupport {
         return merged;
     }
 
+    LambdaReturnResult resolveLambdaReturnBody(RawTree rawTree,
+                                               AnalysisStep lambdaStep,
+                                               LambdaExpr lambdaExpr,
+                                               EngineContext context) {
+        Statement body = lambdaExpr.getBody();
+        if (body.isExpressionStmt()) {
+            return new LambdaReturnResult(
+                    resolveExpressionReads(rawTree, lambdaStep, body.asExpressionStmt().getExpression(), context),
+                    ExpressionResolutionResult.empty()
+            );
+        }
+
+        if (!body.isBlockStmt()) {
+            return new LambdaReturnResult(ExpressionResolutionResult.empty(), ExpressionResolutionResult.empty());
+        }
+
+        ExpressionResolutionResult preReturnReads = ExpressionResolutionResult.empty();
+        ExpressionResolutionResult returnReads = ExpressionResolutionResult.empty();
+        for (Statement statement : body.asBlockStmt().getStatements()) {
+            if (statement.isReturnStmt()) {
+                if (statement.asReturnStmt().getExpression().isPresent()) {
+                    ExpressionResolutionResult statementReturnReads = resolveExpressionReads(
+                            rawTree,
+                            lambdaStep,
+                            statement.asReturnStmt().getExpression().get(),
+                            context
+                    );
+                    returnReads = returnReads.merge(statementReturnReads);
+                }
+                continue;
+            }
+
+            if (!statement.isExpressionStmt() || !returnReads.isEmpty() || returnReads.isUncertain()) {
+                continue;
+            }
+
+            ExpressionResolutionResult statementPreReturnReads = resolveExpressionReads(
+                    rawTree,
+                    lambdaStep,
+                    statement.asExpressionStmt().getExpression(),
+                    context
+            );
+            preReturnReads = preReturnReads.merge(statementPreReturnReads);
+        }
+
+        return new LambdaReturnResult(returnReads, preReturnReads);
+    }
+
     private ExpressionResolutionResult resolveExpressionReads(RawTree rawTree,
                                                              AnalysisStep lambdaStep,
                                                              Expression expression,
@@ -162,6 +210,10 @@ class LambdaElementBindingSupport {
     }
 
     record ScopeElements(ExpressionResolutionResult scopeResult, Set<RawNode> elementNodes) {
+
+    }
+
+    record LambdaReturnResult(ExpressionResolutionResult returnedResult, ExpressionResolutionResult preReturnReads) {
 
     }
 }

@@ -126,6 +126,34 @@ public class DocumentScenarioService {
                 .forEach(product -> product.getSku());
     }
 
+    public void inspectDocumentWithStreamMapBlockLambdaEntityContinuation(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> {
+                    return line.getProduct();
+                })
+                .forEach(product -> product.getSku());
+    }
+
+    public void inspectDocumentWithStreamMapBlockLambdaLeafToList(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> {
+                    return line.getProduct().getSku();
+                })
+                .toList();
+    }
+
+    public void inspectDocumentWithStreamMapBlockLambdaPreReturnRead(Document document) {
+        document.getLines()
+                .stream()
+                .map(line -> {
+                    line.getProduct().getCategory().getCode();
+                    return line.getProduct();
+                })
+                .forEach(product -> product.getSku());
+    }
+
     public void inspectDocumentWithCollectionForEachLambda(Document document) {
         document.getLines()
                 .forEach(line -> line.getProduct().getSku());
