@@ -350,15 +350,26 @@ Status values used below:
 
 ---
 
-## ISSUE-012 — Stream scenario coverage currently reflects only minimal chained `map(MethodRef)` support, not broader stream semantics
+## ISSUE-012 — Stream scenario coverage has grown substantially but remains narrow best-effort support, not generalized Stream API semantics
 
 - Status: `PARTIALLY MITIGATED`
 - Area: stream expression support / scenario integration
 - Found during: adding `inspectDocumentWithStreamMap(Document document)`
 - Summary:
   Stream support started as a narrow chained method-reference `map` scenario and has grown incrementally through focused
-  scenarios. Current scenario coverage includes lambda `map`, `filter`/match, collector handlers, terminal scope usage,
-  and a narrow root-derived nested collection `flatMap(lambda)` shape.
+  scenarios. Current scenario coverage now includes method-reference and lambda `map`, `forEach`, `filter`/match,
+  `toMap` / `groupingBy` collectors, terminal scope usage, narrow root-derived nested collection `flatMap(lambda)`,
+  comparator-key extraction for `sorted` / `min` / `max`, and a direct `findFirst/findAny().ifPresent(lambda)` Optional
+  bridge. This remains intentionally narrow best-effort support, not full Stream API analysis.
+- Covered map/filter/match/collector/terminal cases:
+  - `stream().map(MethodRef)` and `stream().map(lambda)` including block-return lambdas;
+  - `collection/stream.forEach(lambda)` simple expression/block-expression body reads;
+  - `filter(lambda)` predicate reads;
+  - `anyMatch/allMatch/noneMatch(lambda)` predicate reads;
+  - `collect(Collectors.toMap(...))` key/value mapper extraction;
+  - `collect(Collectors.groupingBy(...))` classifier extraction;
+  - terminal `toList`, `count`, and simple `collect(toList/toSet/toUnmodifiableList/toUnmodifiableSet/toCollection)`
+    scope usage.
 - Latest flatMap-covered cases:
   - `document.getContracts().stream().flatMap(contract -> contract.getLines().stream()).forEach(line -> line.getProduct().getSku())`
     -> `contracts.lines.product.sku`;
@@ -382,11 +393,13 @@ Status values used below:
   - block `findFirst().ifPresent(line -> { line.getProduct().getSku(); line.getQuantity(); })`
     -> `lines.product.sku`, `lines.quantity`.
 - Remaining limitation:
-  This is still not generalized stream semantics. Arbitrary `flatMap`, `Optional.stream`, service calls inside flatMap
-  lambdas beyond existing resolver behavior, arbitrary comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`,
-  custom comparator second arguments, general Optional API (`map`, `flatMap`, `filter`, `orElse`, `orElseGet`,
-  `ifPresentOrElse`), local Optional variable rebinding, multi-parameter lambdas, and unrelated stream operations remain
-  unsupported unless explicitly covered by focused scenarios.
+  This is still not generalized stream semantics. Unsupported / not generalized cases include arbitrary stream semantics,
+  arbitrary collectors, `reduce`, downstream collector adapters such as `mapping`, `flatMapping`, or `reducing`,
+  `partitioningBy`, `groupingByConcurrent`, `toConcurrentMap`, arbitrary comparator lambdas `(a, b) -> ...`,
+  `thenComparing`, `nullsFirst` / `nullsLast`, custom comparator second arguments, general Optional API,
+  `ifPresentOrElse`, local Optional variable rebinding, `map(...).findFirst().ifPresent(...)` continuation unless
+  explicitly supported later, service calls inside stream lambdas beyond existing resolver behavior, multi-parameter
+  lambdas, and `Map.forEach(...)`.
 
 ---
 
