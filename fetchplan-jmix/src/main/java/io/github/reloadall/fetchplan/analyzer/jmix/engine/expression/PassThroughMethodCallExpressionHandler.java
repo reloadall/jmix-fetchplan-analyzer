@@ -11,7 +11,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_PassThroughMethodCallExpressionHandler")
-@Order(170)
+@Order(180)
 public class PassThroughMethodCallExpressionHandler implements ExpressionHandler {
 
     private final PassThroughMethodPolicy passThroughMethodPolicy;

@@ -6,14 +6,12 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
-import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
-import io.github.reloadall.fetchplan.analyzer.jmix.tree.UsageKind;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component("fpa_StreamTerminalScopeUsageExpressionHandler")
-@Order(169)
+@Order(170)
 public class StreamTerminalScopeUsageExpressionHandler implements ExpressionHandler {
 
     private static final Set<String> DIRECT_TERMINAL_METHODS = Set.of(
@@ -51,7 +49,7 @@ public class StreamTerminalScopeUsageExpressionHandler implements ExpressionHand
                 methodCallExpr.getScope().get(),
                 context
         );
-        markTerminal(scopeResult);
+        StreamCollectorSupport.markTerminal(scopeResult);
         return scopeResult;
     }
 
@@ -72,7 +70,7 @@ public class StreamTerminalScopeUsageExpressionHandler implements ExpressionHand
         MethodCallExpr collectorCall = methodCallExpr.getArgument(0).asMethodCallExpr();
         return SIMPLE_COLLECTOR_METHODS.contains(collectorCall.getNameAsString())
                 && isSupportedCollectorArgumentCount(collectorCall)
-                && isSupportedCollectorsScope(collectorCall);
+                && StreamCollectorSupport.isSupportedCollectorsScope(collectorCall);
     }
 
     private boolean isSupportedCollectorArgumentCount(MethodCallExpr collectorCall) {
@@ -83,18 +81,4 @@ public class StreamTerminalScopeUsageExpressionHandler implements ExpressionHand
         return collectorCall.getArguments().isEmpty();
     }
 
-    private boolean isSupportedCollectorsScope(MethodCallExpr collectorCall) {
-        if (collectorCall.getScope().isEmpty()) {
-            return true;
-        }
-
-        String scope = collectorCall.getScope().get().toString();
-        return "Collectors".equals(scope) || "java.util.stream.Collectors".equals(scope);
-    }
-
-    private void markTerminal(ExpressionResolutionResult result) {
-        for (RawNode node : result.getNodes()) {
-            node.setUsageKind(UsageKind.TERMINAL);
-        }
-    }
 }

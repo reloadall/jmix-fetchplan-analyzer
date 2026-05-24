@@ -58,7 +58,7 @@ public class StreamCollectGroupingByExpressionHandler implements ExpressionHandl
         return "groupingBy".equals(collectorCall.getNameAsString())
                 && argumentCount >= 1
                 && argumentCount <= 3
-                && isSupportedCollectorsScope(collectorCall);
+                && StreamCollectorSupport.isSupportedCollectorsScope(collectorCall);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class StreamCollectGroupingByExpressionHandler implements ExpressionHandl
                 scopeElements,
                 context
         );
-        markTerminal(classifierResult);
+        StreamCollectorSupport.markTerminal(classifierResult);
         return classifierResult;
     }
 
@@ -112,7 +112,8 @@ public class StreamCollectGroupingByExpressionHandler implements ExpressionHandl
                                                               LambdaExpr lambdaExpr,
                                                               LambdaElementBindingSupport.ScopeElements scopeElements,
                                                               EngineContext context) {
-        if (lambdaExpr.getParameters().size() != 1 || !isSupportedLambdaBody(lambdaExpr)) {
+        if (lambdaExpr.getParameters().size() != 1
+                || !StreamCollectorSupport.isSupportedReturnLikeLambdaBody(lambdaExpr)) {
             return ExpressionResolutionResult.empty();
         }
 
@@ -128,7 +129,7 @@ public class StreamCollectGroupingByExpressionHandler implements ExpressionHandl
                 lambdaExpr,
                 context
         );
-        markTerminal(lambdaReturnResult.preReturnReads());
+        StreamCollectorSupport.markTerminal(lambdaReturnResult.preReturnReads());
         ExpressionResolutionResult returnedResult = lambdaReturnResult.returnedResult();
         return new ExpressionResolutionResult(
                 returnedResult.getNodes(),
@@ -142,7 +143,11 @@ public class StreamCollectGroupingByExpressionHandler implements ExpressionHandl
                                                                        AnalysisStep step,
                                                                        MethodReferenceExpr methodReferenceExpr,
                                                                        LambdaElementBindingSupport.ScopeElements scopeElements) {
-        Optional<String> mappedField = resolveMappedField(step, methodReferenceExpr);
+        Optional<String> mappedField = StreamCollectorSupport.resolveBackedMethodReferenceField(
+                step,
+                methodReferenceExpr,
+                getterPropertyAccessResolver
+        );
         if (mappedField.isEmpty()) {
             return ExpressionResolutionResult.empty();
         }
@@ -162,36 +167,4 @@ public class StreamCollectGroupingByExpressionHandler implements ExpressionHandl
         return new ExpressionResolutionResult(resultNodes, scopeElements.scopeResult().isUncertain());
     }
 
-    private boolean isSupportedCollectorsScope(MethodCallExpr collectorCall) {
-        if (collectorCall.getScope().isEmpty()) {
-            return true;
-        }
-
-        String scope = collectorCall.getScope().get().toString();
-        return "Collectors".equals(scope) || "java.util.stream.Collectors".equals(scope);
-    }
-
-    private boolean isSupportedLambdaBody(LambdaExpr lambdaExpr) {
-        if (lambdaExpr.getBody().isExpressionStmt()) {
-            return true;
-        }
-
-        return lambdaExpr.getBody().isBlockStmt()
-                && lambdaExpr.getBody().asBlockStmt().getStatements().stream().anyMatch(statement -> statement.isReturnStmt());
-    }
-
-    private Optional<String> resolveMappedField(AnalysisStep step, MethodReferenceExpr methodReferenceExpr) {
-        String ownerTypeName = methodReferenceExpr.getScope().toString();
-        return getterPropertyAccessResolver.resolveBackedPropertyName(
-                step.getMethod(),
-                ownerTypeName,
-                methodReferenceExpr.getIdentifier()
-        );
-    }
-
-    private void markTerminal(ExpressionResolutionResult result) {
-        for (RawNode node : result.getNodes()) {
-            node.setUsageKind(UsageKind.TERMINAL);
-        }
-    }
 }
