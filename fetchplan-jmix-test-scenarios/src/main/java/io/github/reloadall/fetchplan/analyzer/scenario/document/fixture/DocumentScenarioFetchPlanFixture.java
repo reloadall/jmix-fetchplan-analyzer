@@ -330,6 +330,48 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines.product.sku"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.category",
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA_LEAF_PATHS = Set.of(
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF_LEAF_PATHS = Set.of(
+            "lines.product"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.category",
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM_LEAF_PATHS = Set.of(
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.category",
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM_LEAF_PATHS = Set.of(
+            "lines.product.category.code"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",

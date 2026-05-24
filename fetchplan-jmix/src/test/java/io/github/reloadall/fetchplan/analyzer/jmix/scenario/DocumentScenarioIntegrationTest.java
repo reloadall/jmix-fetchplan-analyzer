@@ -30,6 +30,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MapMethodCa
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.MethodCallExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.NameExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.PassThroughMethodCallExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectGroupingByExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamCollectToMapExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
@@ -356,6 +357,46 @@ class DocumentScenarioIntegrationTest {
                 DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_ALL_PATHS,
                 DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_TO_MAP_IDENTITY_VALUE_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingByLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingByLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingByMethodRefScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingByMethodRef",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingByDownstreamScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingByDownstream",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamCollectGroupingBySupplierDownstreamScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamCollectGroupingBySupplierDownstream",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM_LEAF_PATHS
         );
     }
 
@@ -706,6 +747,7 @@ class DocumentScenarioIntegrationTest {
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),
                 new StreamCollectToMapExpressionHandler(),
+                new StreamCollectGroupingByExpressionHandler(),
                 new PassThroughMethodCallExpressionHandler(new PassThroughMethodPolicy()),
                 new ConditionalExpressionHandler(),
                 new InterprocMethodCallExpressionHandler(

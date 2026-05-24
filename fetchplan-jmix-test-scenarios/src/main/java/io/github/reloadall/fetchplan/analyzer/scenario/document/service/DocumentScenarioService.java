@@ -243,6 +243,41 @@ public class DocumentScenarioService {
                 ));
     }
 
+    public void inspectDocumentWithStreamCollectGroupingByLambda(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        line -> line.getProduct().getCategory().getCode()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingByMethodRef(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        DocumentLine::getProduct
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingByDownstream(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        line -> line.getProduct().getCategory().getCode(),
+                        java.util.stream.Collectors.toList()
+                ));
+    }
+
+    public void inspectDocumentWithStreamCollectGroupingBySupplierDownstream(Document document) {
+        document.getLines()
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        line -> line.getProduct().getCategory().getCode(),
+                        java.util.HashMap::new,
+                        java.util.stream.Collectors.toList()
+                ));
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();

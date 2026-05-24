@@ -140,6 +140,22 @@ public final class DocumentScenarioExpectedPaths {
             "lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_LAMBDA = Set.of(
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_METHOD_REF = Set.of(
+            "lines.product"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_DOWNSTREAM = Set.of(
+            "lines.product.category.code"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_COLLECT_GROUPING_BY_SUPPLIER_DOWNSTREAM = Set.of(
+            "lines.product.category.code"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"
