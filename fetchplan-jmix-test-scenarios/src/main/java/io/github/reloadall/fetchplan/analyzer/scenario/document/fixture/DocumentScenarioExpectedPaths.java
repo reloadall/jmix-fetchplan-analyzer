@@ -192,6 +192,26 @@ public final class DocumentScenarioExpectedPaths {
             "lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA = Set.of(
+            "lines.product.sku",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF = Set.of(
+            "lines.quantity",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT = Set.of(
+            "lines.quantity",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED = Set.of(
+            "lines.product.sku",
+            "lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"

@@ -1,32 +1,38 @@
 package io.github.reloadall.fetchplan.analyzer.jmix.engine.expression;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.AnalysisStep;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.EngineContext;
 import io.github.reloadall.fetchplan.analyzer.jmix.source.SourceAnalysisCache;
+import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawNode;
 import io.github.reloadall.fetchplan.analyzer.jmix.tree.RawTree;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-@Component("fpa_StreamSortedComparatorExpressionHandler")
-@Order(163)
-public class StreamSortedComparatorExpressionHandler implements ExpressionHandler {
+@Component("fpa_StreamMinMaxComparatorExpressionHandler")
+@Order(164)
+public class StreamMinMaxComparatorExpressionHandler implements ExpressionHandler {
+
+    private static final Set<String> SUPPORTED_METHODS = Set.of("min", "max");
 
     private final LambdaElementBindingSupport lambdaSupport = new LambdaElementBindingSupport();
     private final StreamComparatorSupport comparatorSupport;
 
-    public StreamSortedComparatorExpressionHandler() {
+    public StreamMinMaxComparatorExpressionHandler() {
         this(new GetterPropertyAccessResolver());
     }
 
     @Autowired
-    public StreamSortedComparatorExpressionHandler(SourceAnalysisCache sourceAnalysisCache) {
+    public StreamMinMaxComparatorExpressionHandler(SourceAnalysisCache sourceAnalysisCache) {
         this(new GetterPropertyAccessResolver(sourceAnalysisCache));
     }
 
-    StreamSortedComparatorExpressionHandler(GetterPropertyAccessResolver getterPropertyAccessResolver) {
+    StreamMinMaxComparatorExpressionHandler(GetterPropertyAccessResolver getterPropertyAccessResolver) {
         this.comparatorSupport = new StreamComparatorSupport(getterPropertyAccessResolver);
     }
 
@@ -36,11 +42,11 @@ public class StreamSortedComparatorExpressionHandler implements ExpressionHandle
             return false;
         }
 
-        MethodCallExpr sortedCall = expression.asMethodCallExpr();
-        return "sorted".equals(sortedCall.getNameAsString())
-                && sortedCall.getScope().isPresent()
-                && sortedCall.getArguments().size() == 1
-                && comparatorSupport.resolveComparingCall(sortedCall.getArgument(0)).isPresent();
+        MethodCallExpr terminalCall = expression.asMethodCallExpr();
+        return SUPPORTED_METHODS.contains(terminalCall.getNameAsString())
+                && terminalCall.getScope().isPresent()
+                && terminalCall.getArguments().size() == 1
+                && comparatorSupport.resolveComparingCall(terminalCall.getArgument(0)).isPresent();
     }
 
     @Override
@@ -48,13 +54,13 @@ public class StreamSortedComparatorExpressionHandler implements ExpressionHandle
                                                  AnalysisStep step,
                                                  Expression expression,
                                                  EngineContext context) {
-        MethodCallExpr sortedCall = expression.asMethodCallExpr();
-        MethodCallExpr comparingCall = comparatorSupport.resolveComparingCall(sortedCall.getArgument(0)).orElseThrow();
+        MethodCallExpr terminalCall = expression.asMethodCallExpr();
+        MethodCallExpr comparingCall = comparatorSupport.resolveComparingCall(terminalCall.getArgument(0)).orElseThrow();
 
         LambdaElementBindingSupport.ScopeElements scopeElements = lambdaSupport.resolveScopeElements(
                 rawTree,
                 step,
-                sortedCall,
+                terminalCall,
                 context
         );
         ExpressionResolutionResult scopeResult = scopeElements.scopeResult();
@@ -69,10 +75,14 @@ public class StreamSortedComparatorExpressionHandler implements ExpressionHandle
                 scopeElements,
                 context
         );
-        StreamCollectorSupport.markTerminal(keyResult);
 
+        StreamCollectorSupport.markTerminal(keyResult);
+        StreamCollectorSupport.markTerminal(scopeResult);
+
+        Set<RawNode> resultNodes = new LinkedHashSet<>(scopeResult.getNodes());
+        resultNodes.addAll(keyResult.getNodes());
         return new ExpressionResolutionResult(
-                scopeResult.getNodes(),
+                resultNodes,
                 scopeResult.isUncertain() || keyResult.isUncertain()
         );
     }

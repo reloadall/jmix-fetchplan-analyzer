@@ -19,6 +19,9 @@
 - narrow `stream().sorted(Comparator.comparing(...))` support for one-argument key extractors over root-derived
   entity streams, including `comparing`, `comparingInt`, `comparingLong`, `comparingDouble`, and a direct
   `.reversed()` wrapper around those calls
+- narrow terminal `stream().min/max(Comparator.comparing(...))` support for one-argument key extractors over
+  root-derived entity streams, with the same supported `comparing*` variants and direct `.reversed()` wrapper;
+  `Optional` result continuation is not modeled
 - narrow collection/stream `forEach(lambda)` body extraction for root-derived entity collections when the lambda has one
   parameter and contains direct getter-chain expression reads
 - top-level method calls
@@ -69,6 +72,7 @@
 - generalized comparator semantics beyond the narrow `sorted(Comparator.comparing(...))` key-extractor shape,
   including arbitrary `(a, b) -> ...` comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`, and custom
   comparator second arguments;
+- `Optional` result continuation after terminal `min/max`, such as `.ifPresent(...)`;
 - generalized stream pipeline semantics;
 - `supports(...)`-style filtering / selective worker execution;
 - qualifier / `@Primary` / ordering-sensitive worker selection semantics;
@@ -144,6 +148,11 @@ Currently covered by scenario integration:
   - `inspectDocumentWithStreamSortedComparatorMethodRefToList(Document document)` -> `lines.quantity`, `lines`;
   - `inspectDocumentWithStreamSortedComparatorComparingIntToList(Document document)` -> `lines.quantity`, `lines`;
   - `inspectDocumentWithStreamSortedComparatorReversedToList(Document document)` -> `lines.product.sku`, `lines`.
+- narrow terminal `stream().min/max(Comparator.comparing(...))` comparator key extraction via:
+  - `inspectDocumentWithStreamMaxComparatorLambda(Document document)` -> `lines.product.sku`, `lines`;
+  - `inspectDocumentWithStreamMinComparatorMethodRef(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamMaxComparatorComparingInt(Document document)` -> `lines.quantity`, `lines`;
+  - `inspectDocumentWithStreamMinComparatorReversed(Document document)` -> `lines.product.sku`, `lines`.
 - narrow collection/stream `forEach(lambda)` getter-chain extraction via:
   - `inspectDocumentWithCollectionForEachLambda(Document document)` -> `lines.product.sku`;
   - `inspectDocumentWithStreamForEachLambda(Document document)` -> `lines.product.sku`;
@@ -200,8 +209,8 @@ Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the documented narrow `map`, `forEach`, `filter`/match/collector, terminal scope, and
-  root-derived nested collection `flatMap(lambda)` / sorted comparator key-extractor patterns are **not** yet documented
-  as scenario-covered in this module.
+  root-derived nested collection `flatMap(lambda)` / sorted and min/max comparator key-extractor patterns are **not** yet
+  documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 - structural parent/container paths are not emitted merely because deeper descendants exist.
   They are emitted only when the parent property itself was actually accessed under the current policy.

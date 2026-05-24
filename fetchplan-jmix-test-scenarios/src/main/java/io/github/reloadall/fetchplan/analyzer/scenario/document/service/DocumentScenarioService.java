@@ -365,6 +365,30 @@ public class DocumentScenarioService {
                 .toList();
     }
 
+    public void inspectDocumentWithStreamMaxComparatorLambda(Document document) {
+        document.getLines()
+                .stream()
+                .max(java.util.Comparator.comparing(line -> line.getProduct().getSku()));
+    }
+
+    public void inspectDocumentWithStreamMinComparatorMethodRef(Document document) {
+        document.getLines()
+                .stream()
+                .min(java.util.Comparator.comparing(DocumentLine::getQuantity));
+    }
+
+    public void inspectDocumentWithStreamMaxComparatorComparingInt(Document document) {
+        document.getLines()
+                .stream()
+                .max(java.util.Comparator.comparingInt(DocumentLine::getQuantity));
+    }
+
+    public void inspectDocumentWithStreamMinComparatorReversed(Document document) {
+        document.getLines()
+                .stream()
+                .min(java.util.Comparator.comparing((DocumentLine line) -> line.getProduct().getSku()).reversed());
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();

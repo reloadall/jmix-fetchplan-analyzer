@@ -370,11 +370,16 @@ Status values used below:
   - `sorted(Comparator.comparing(DocumentLine::getQuantity)).toList()` -> `lines.quantity`, `lines`;
   - `sorted(Comparator.comparingInt(DocumentLine::getQuantity)).toList()` -> `lines.quantity`, `lines`;
   - direct `Comparator.comparing(...).reversed()` wrapper -> `lines.product.sku`, `lines`.
+- Latest min/max-comparator-covered cases:
+  - `max(Comparator.comparing(line -> line.getProduct().getSku()))` -> `lines.product.sku`, `lines`;
+  - `min(Comparator.comparing(DocumentLine::getQuantity))` -> `lines.quantity`, `lines`;
+  - `max(Comparator.comparingInt(DocumentLine::getQuantity))` -> `lines.quantity`, `lines`;
+  - direct `Comparator.comparing(...).reversed()` wrapper for `min(...)` -> `lines.product.sku`, `lines`.
 - Remaining limitation:
   This is still not generalized stream semantics. Arbitrary `flatMap`, `Optional.stream`, service calls inside flatMap
   lambdas beyond existing resolver behavior, arbitrary comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`,
-  custom comparator second arguments, multi-parameter lambdas, and unrelated stream operations remain unsupported unless
-  explicitly covered by focused scenarios.
+  custom comparator second arguments, `Optional` result continuation after `min/max`, multi-parameter lambdas, and unrelated
+  stream operations remain unsupported unless explicitly covered by focused scenarios.
 
 ---
 

@@ -454,6 +454,48 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF_ALL_PATHS = Set.of(
+            "lines",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF_LEAF_PATHS = Set.of(
+            "lines.quantity",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT_ALL_PATHS = Set.of(
+            "lines",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT_LEAF_PATHS = Set.of(
+            "lines.quantity",
+            "lines"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",

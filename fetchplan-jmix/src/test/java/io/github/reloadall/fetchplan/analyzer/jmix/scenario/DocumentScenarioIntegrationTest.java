@@ -35,6 +35,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamColle
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamFlatMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMinMaxComparatorExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamSortedComparatorExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamTerminalScopeUsageExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
@@ -504,6 +505,46 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamMaxComparatorLambdaScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMaxComparatorLambda",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_LAMBDA_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMinComparatorMethodRefScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMinComparatorMethodRef",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_METHOD_REF_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMaxComparatorComparingIntScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMaxComparatorComparingInt",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MAX_COMPARATOR_COMPARING_INT_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamMinComparatorReversedScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamMinComparatorReversed",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_MIN_COMPARATOR_REVERSED_LEAF_PATHS
+        );
+    }
+
+    @Test
     void analyzesUnknownBreakScenarioAndReportsUncertainty() {
         ScenarioResult result = analyzeScenario(
                 "inspectDocumentWithUnknownBreak",
@@ -857,6 +898,7 @@ class DocumentScenarioIntegrationTest {
                 new StreamMapLambdaExpressionHandler(),
                 new StreamFlatMapLambdaExpressionHandler(),
                 new StreamSortedComparatorExpressionHandler(),
+                new StreamMinMaxComparatorExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),
