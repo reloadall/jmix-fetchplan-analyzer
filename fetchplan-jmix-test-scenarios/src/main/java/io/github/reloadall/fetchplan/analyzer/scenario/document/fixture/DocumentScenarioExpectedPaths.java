@@ -212,6 +212,20 @@ public final class DocumentScenarioExpectedPaths {
             "lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER = Set.of(
+            "lines.quantity",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS = Set.of(
             "contract.number",
             "contract.customer.name"

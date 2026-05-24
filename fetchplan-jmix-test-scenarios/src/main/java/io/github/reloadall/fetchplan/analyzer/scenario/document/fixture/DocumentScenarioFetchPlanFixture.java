@@ -496,6 +496,40 @@ public final class DocumentScenarioFetchPlanFixture {
             "lines"
     );
 
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER_ALL_PATHS = Set.of(
+            "lines",
+            "lines.quantity",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER_LEAF_PATHS = Set.of(
+            "lines.quantity",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT_LEAF_PATHS = Set.of(
+            "lines.product.sku"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK_ALL_PATHS = Set.of(
+            "lines",
+            "lines.product",
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
+    public static final Set<String> INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK_LEAF_PATHS = Set.of(
+            "lines.product.sku",
+            "lines.quantity"
+    );
+
     public static final Set<String> INSPECT_DOCUMENT_WITH_WORKERS_ALL_PATHS = Set.of(
             "contract",
             "contract.number",

@@ -36,6 +36,7 @@ import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamFlatM
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMapLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMatchLambdaExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamMinMaxComparatorExpressionHandler;
+import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamOptionalIfPresentExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamSortedComparatorExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.expression.StreamTerminalScopeUsageExpressionHandler;
 import io.github.reloadall.fetchplan.analyzer.jmix.engine.payload.StatementsPayloadHandler;
@@ -545,6 +546,36 @@ class DocumentScenarioIntegrationTest {
     }
 
     @Test
+    void analyzesStreamFindFirstIfPresentAfterFilterScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFindFirstIfPresentAfterFilter",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_AFTER_FILTER_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFindAnyIfPresentScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFindAnyIfPresent",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_ANY_IF_PRESENT_LEAF_PATHS
+        );
+    }
+
+    @Test
+    void analyzesStreamFindFirstIfPresentBlockScenarioAndMatchesFixturePaths() {
+        assertScenario(
+                "inspectDocumentWithStreamFindFirstIfPresentBlock",
+                DocumentScenarioExpectedPaths.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK_ALL_PATHS,
+                DocumentScenarioFetchPlanFixture.INSPECT_DOCUMENT_WITH_STREAM_FIND_FIRST_IF_PRESENT_BLOCK_LEAF_PATHS
+        );
+    }
+
+    @Test
     void analyzesUnknownBreakScenarioAndReportsUncertainty() {
         ScenarioResult result = analyzeScenario(
                 "inspectDocumentWithUnknownBreak",
@@ -899,6 +930,7 @@ class DocumentScenarioIntegrationTest {
                 new StreamFlatMapLambdaExpressionHandler(),
                 new StreamSortedComparatorExpressionHandler(),
                 new StreamMinMaxComparatorExpressionHandler(),
+                new StreamOptionalIfPresentExpressionHandler(),
                 new ForEachLambdaExpressionHandler(),
                 new FilterLambdaExpressionHandler(),
                 new StreamMatchLambdaExpressionHandler(),

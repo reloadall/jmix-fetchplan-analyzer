@@ -389,6 +389,31 @@ public class DocumentScenarioService {
                 .min(java.util.Comparator.comparing((DocumentLine line) -> line.getProduct().getSku()).reversed());
     }
 
+    public void inspectDocumentWithStreamFindFirstIfPresentAfterFilter(Document document) {
+        document.getLines()
+                .stream()
+                .filter(line -> line.getQuantity() > 0)
+                .findFirst()
+                .ifPresent(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFindAnyIfPresent(Document document) {
+        document.getLines()
+                .stream()
+                .findAny()
+                .ifPresent(line -> line.getProduct().getSku());
+    }
+
+    public void inspectDocumentWithStreamFindFirstIfPresentBlock(Document document) {
+        document.getLines()
+                .stream()
+                .findFirst()
+                .ifPresent(line -> {
+                    line.getProduct().getSku();
+                    line.getQuantity();
+                });
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();

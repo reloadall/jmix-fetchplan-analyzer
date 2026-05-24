@@ -22,6 +22,8 @@
 - narrow terminal `stream().min/max(Comparator.comparing(...))` support for one-argument key extractors over
   root-derived entity streams, with the same supported `comparing*` variants and direct `.reversed()` wrapper;
   `Optional` result continuation is not modeled
+- narrow `stream().findFirst/findAny().ifPresent(lambda)` Optional bridge support over root-derived entity streams,
+  where the `ifPresent` lambda has one parameter and uses a simple expression body or block expression statements
 - narrow collection/stream `forEach(lambda)` body extraction for root-derived entity collections when the lambda has one
   parameter and contains direct getter-chain expression reads
 - top-level method calls
@@ -73,6 +75,9 @@
   including arbitrary `(a, b) -> ...` comparator lambdas, `thenComparing`, `nullsFirst` / `nullsLast`, and custom
   comparator second arguments;
 - `Optional` result continuation after terminal `min/max`, such as `.ifPresent(...)`;
+- general Optional API beyond the narrow `findFirst/findAny().ifPresent(lambda)` bridge, including `Optional.map`,
+  `flatMap`, `filter`, `orElse`, `orElseGet`, `ifPresentOrElse`, local Optional variable rebinding, and
+  `Optional.stream()`;
 - generalized stream pipeline semantics;
 - `supports(...)`-style filtering / selective worker execution;
 - qualifier / `@Primary` / ordering-sensitive worker selection semantics;
@@ -153,6 +158,10 @@ Currently covered by scenario integration:
   - `inspectDocumentWithStreamMinComparatorMethodRef(Document document)` -> `lines.quantity`, `lines`;
   - `inspectDocumentWithStreamMaxComparatorComparingInt(Document document)` -> `lines.quantity`, `lines`;
   - `inspectDocumentWithStreamMinComparatorReversed(Document document)` -> `lines.product.sku`, `lines`.
+- narrow `findFirst/findAny().ifPresent(lambda)` Optional bridge via:
+  - `inspectDocumentWithStreamFindFirstIfPresentAfterFilter(Document document)` -> `lines.quantity`, `lines.product.sku`;
+  - `inspectDocumentWithStreamFindAnyIfPresent(Document document)` -> `lines.product.sku`;
+  - `inspectDocumentWithStreamFindFirstIfPresentBlock(Document document)` -> `lines.product.sku`, `lines.quantity`.
 - narrow collection/stream `forEach(lambda)` getter-chain extraction via:
   - `inspectDocumentWithCollectionForEachLambda(Document document)` -> `lines.product.sku`;
   - `inspectDocumentWithStreamForEachLambda(Document document)` -> `lines.product.sku`;
@@ -209,8 +218,8 @@ Important note:
 
 - these cases are scenario-covered as separate root methods, not merged into one ambiguous expected-path set;
 - broader stream semantics beyond the documented narrow `map`, `forEach`, `filter`/match/collector, terminal scope, and
-  root-derived nested collection `flatMap(lambda)` / sorted and min/max comparator key-extractor patterns are **not** yet
-  documented as scenario-covered in this module.
+  root-derived nested collection `flatMap(lambda)` / sorted and min/max comparator key-extractor / findFirst-findAny
+  `ifPresent(lambda)` bridge patterns are **not** yet documented as scenario-covered in this module.
 - collection-injected worker fan-out is currently supported only for the narrow foreach pattern exercised by `inspectDocumentWithWorkers(Document document)`.
 - structural parent/container paths are not emitted merely because deeper descendants exist.
   They are emitted only when the parent property itself was actually accessed under the current policy.
