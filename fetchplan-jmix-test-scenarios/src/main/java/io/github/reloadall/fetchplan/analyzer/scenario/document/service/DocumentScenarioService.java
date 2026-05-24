@@ -138,6 +138,24 @@ public class DocumentScenarioService {
                 .forEach(line -> line.getQuantity());
     }
 
+    public void inspectDocumentWithStreamAnyMatchLambda(Document document) {
+        document.getLines()
+                .stream()
+                .anyMatch(line -> line.getProduct().getSku() != null);
+    }
+
+    public void inspectDocumentWithStreamAllMatchLambda(Document document) {
+        document.getLines()
+                .stream()
+                .allMatch(line -> line.getProduct().getCategory().getCode().equals("A"));
+    }
+
+    public void inspectDocumentWithStreamNoneMatchLambda(Document document) {
+        document.getLines()
+                .stream()
+                .noneMatch(line -> line.getQuantity() == 0);
+    }
+
     public void inspectDocumentWithUnknownBreak(Document document) {
         Address address = AddressSelector.select(document);
         address.getCity();
