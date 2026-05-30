@@ -34,7 +34,10 @@ rootProject.tasks.register('fetchplanAnalyzeMethod', JavaExec) {
                 "fetchplan.rootParam=${findProperty('fetchplan.rootParam') ?: ''}",
                 "fetchplan.rootType=${findProperty('fetchplan.rootType') ?: ''}",
                 "fetchplan.format=${findProperty('fetchplan.format') ?: 'json'}",
-                "fetchplan.output=${findProperty('fetchplan.output') ?: ''}"
+                "fetchplan.output=${findProperty('fetchplan.output') ?: ''}",
+                "fetchplan.expectedPaths=${findProperty('fetchplan.expectedPaths') ?: ''}",
+                "fetchplan.expectedPathsFile=${findProperty('fetchplan.expectedPathsFile') ?: ''}",
+                "fetchplan.compare=${findProperty('fetchplan.compare') ?: ''}"
         ]
     }
 }
