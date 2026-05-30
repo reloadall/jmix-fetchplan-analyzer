@@ -17,6 +17,22 @@ Status values used below:
 
 ---
 
+## ISSUE-000 — Analysis report evidence is currently best-effort / usually empty
+
+- Status: `OPEN`
+- Area: report contract / source evidence
+- Found during: S13 report contract introduction
+- Summary:
+  The new single-method `AnalysisReport` contract includes evidence fields (`file`, `line`, `expression`, `note`), but the existing analyzer model does not currently retain source locations for canonical paths.
+- Evidence:
+  `AnalysisReportFactory.fromSingleMethodAnalysis(...)` converts existing canonical path strings into `ReportPath` entries with empty evidence lists.
+- Current rationale:
+  S13 intentionally adds a report layer on top of existing analyzer output and avoids refactoring walkers, raw nodes, normalizer, or interprocedural logic just to obtain perfect evidence.
+- Suggested next step:
+  In a later focused task, capture source evidence in raw semantic facts and propagate it through normalization without changing canonical path semantics.
+
+---
+
 ## ISSUE-001 — Very low behavioral regression coverage in core analyzer
 
 - Status: `PARTIALLY MITIGATED`

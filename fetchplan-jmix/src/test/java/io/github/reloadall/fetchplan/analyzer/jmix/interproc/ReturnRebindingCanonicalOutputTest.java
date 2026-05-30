@@ -303,7 +303,7 @@ class ReturnRebindingCanonicalOutputTest {
                 rootParamType
         );
 
-        RawTree rawTree = astPathEngine.analyze(method, rootParamName);
+    RawTree rawTree = astPathEngine.analyze(method, rootParamName);
         return new PathTreeFlattener().flatten(new RawTreeNormalizer().normalize(rawTree));
-    }
+}
 }
