@@ -37,6 +37,8 @@ Two renderers are provided:
 
 Both renderers sort path-like collections deterministically and do not introduce random IDs. Empty unsupported/warning/limit sections are rendered explicitly as empty arrays in JSON or `None` in Markdown.
 
+JSON renderer output is validated by parser-based tests. Evidence entries are currently rendered in the order provided because this may represent source order in future analyzer evidence collection.
+
 ## Current limitations
 
 Source evidence is part of the contract but is not yet populated by the analyzer pipeline for canonical paths. For this task, report paths are created with empty evidence lists unless callers provide evidence explicitly.
