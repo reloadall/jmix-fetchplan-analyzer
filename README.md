@@ -102,13 +102,19 @@ Interpretation note:
 
 ## Repository structure
 
+- `fetchplan-jmix` — core analyzer addon module
+- `fetchplan-jmix-starter` — starter/autoconfiguration module
+- `fetchplan-jmix-test-scenarios` — analyzable source-fixture / living-documentation module
+- `tools/claude-kit` — optional Claude skill/agent distribution kit; developer tooling only, not runtime addon code
 - `docs/ARCHITECTURE.md` — architecture overview
 - `docs/SUPPORTED_SCOPE.md` — supported/unsupported patterns
 - `docs/ROADMAP.md` — v1 / v1.1 / v2
 - `docs/DECISIONS.md` — important design decisions
 - `docs/EXAMPLES.md` — sample inputs and outputs
 - `docs/FEEDBACK_TEMPLATE.md` — how to report unsupported cases
-- `fetchplan-jmix-test-scenarios` — source-fixture / living-documentation module for regression scenarios analyzed by tests
+- `docs/single-method-report-runner.md` — single-method AnalysisReport runner usage
+- `tools/claude-kit/README.md` — optional Claude kit packaging and installation
+- `tools/claude-kit/src/main/dist/docs/fetchplan-claude/README.md` — documentation shipped inside the Claude kit
 
 ## Scenario fixture module
 
@@ -143,6 +149,61 @@ Current intended usage is **manual/internal analysis**:
 - compare with fetch plan
 - review `Missing`, `Extra`, and `Uncertain`
 - collect unsupported patterns for future iterations
+
+### Single-method report runner
+
+For a focused method-level report, use the `fetchplanAnalyzeMethod` Gradle task:
+
+```bash
+gradlew.bat fetchplanAnalyzeMethod \
+  -Pfetchplan.className=com.example.app.service.OrderService \
+  -Pfetchplan.methodName=calculateTotal \
+  -Pfetchplan.rootParam=order \
+  -Pfetchplan.rootType=com.example.app.entity.Order \
+  -Pfetchplan.format=json \
+  -Pfetchplan.output=build/reports/fetchplan/order-calculate-total.json
+```
+
+Notes:
+
+- prefer `fetchplan.output` for JSON because stdout may contain Gradle or logging warnings;
+- pass `fetchplan.rootType` as a fully qualified class name when known;
+- output is best-effort static analysis, not proof of fetch-plan correctness.
+
+### Expected-path comparison
+
+The runner can compare addon canonical paths against externally supplied expected paths:
+
+```bash
+gradlew.bat fetchplanAnalyzeMethod \
+  -Pfetchplan.className=com.example.app.service.OrderService \
+  -Pfetchplan.methodName=calculateTotal \
+  -Pfetchplan.rootParam=order \
+  -Pfetchplan.rootType=com.example.app.entity.Order \
+  -Pfetchplan.format=json \
+  -Pfetchplan.expectedPathsFile=build/reports/fetchplan/order-calculate-total.expected-paths.txt \
+  -Pfetchplan.output=build/reports/fetchplan/order-calculate-total-comparison.json
+```
+
+This is expected-path comparison, not declared Jmix FetchPlan comparison. Expected paths are review inputs, not authoritative truth.
+
+### Optional Claude kit
+
+Build the optional Claude skill/agent distribution kit with:
+
+```bash
+gradlew.bat claudeKitZip
+```
+
+Output:
+
+```text
+build/distributions/fetchplan-claude-kit-0.1.0.zip
+```
+
+Unpack the ZIP into a target project root. It creates `.claude/...` and `docs/fetchplan-claude/...` files for Claude-assisted review workflows.
+
+The target project must already provide `fetchplanAnalyzeMethod`. The Claude kit is optional developer tooling and is not runtime addon code.
 
 ## Non-goals for current version
 
