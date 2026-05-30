@@ -23,7 +23,9 @@ The service accepts:
 - optional root type;
 - output format: `json` or `markdown`.
 
-If root type is omitted, the service resolves the method by root parameter name and stores the source-declared parameter type in the report target.
+Required text inputs are trimmed before method resolution, analyzer execution, and report target creation. Null or blank required inputs are rejected.
+
+If root type is omitted, the service resolves the method by root parameter name and stores the source-declared parameter type in the report target. Passing `fetchplan.rootType` as a fully qualified class name is recommended for overloaded methods. Omitting root type may be ambiguous when multiple overloads share the same method name and root parameter name.
 
 ## Intended Gradle task contract
 

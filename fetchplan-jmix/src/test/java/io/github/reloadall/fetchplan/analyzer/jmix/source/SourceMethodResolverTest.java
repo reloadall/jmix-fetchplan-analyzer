@@ -65,4 +65,37 @@ class SourceMethodResolverTest {
 
         assertEquals("Java source file not found for class: com.example.MissingService", exception.getMessage());
     }
+
+    @Test
+    void throwsClearAmbiguityErrorWhenRootTypeIsOmittedForOverloadedRootParameter() throws Exception {
+        Path sourceRoot = Files.createDirectories(tempDir.resolve("src/main/java"));
+        Path javaFile = sourceRoot.resolve("com/example/OverloadedService.java");
+        Files.createDirectories(javaFile.getParent());
+        Files.writeString(javaFile, """
+                package com.example;
+
+                class OverloadedService {
+                    void load(TestEntity entity) {
+                    }
+
+                    void load(OtherEntity entity) {
+                    }
+                }
+                """);
+
+        SourceRootsResolver sourceRootsResolver = mock(SourceRootsResolver.class);
+        when(sourceRootsResolver.resolveMainJavaSourceRoots()).thenReturn(List.of(sourceRoot));
+
+        SourceMethodResolver resolver = new SourceMethodResolver(new SourceAnalysisCache(sourceRootsResolver));
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> resolver.resolve("com.example.OverloadedService", "load", "entity")
+        );
+
+        assertEquals(
+                "Ambiguous method match: class=com.example.OverloadedService, method=load, rootParamName=entity, matches=2",
+                exception.getMessage()
+        );
+    }
 }

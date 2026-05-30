@@ -110,6 +110,64 @@ class SingleMethodAnalysisReportServiceTest {
     }
 
     @Test
+    void trimsRequiredArgumentsAndRootTypeBeforeAnalysis() throws Exception {
+        SingleMethodAnalysisReportService service = createService();
+
+        String json = service.render(
+                "  " + DocumentScenarioService.class.getName() + "  ",
+                "  inspectFirstLine  ",
+                "  document  ",
+                "  " + Document.class.getName() + "  ",
+                "json"
+        );
+
+        JsonNode root = objectMapper.readTree(json);
+        assertEquals(DocumentScenarioService.class.getName(), root.path("target").path("className").asText());
+        assertEquals("inspectFirstLine", root.path("target").path("methodName").asText());
+        assertEquals("document", root.path("target").path("rootParameterName").asText());
+        assertEquals(Document.class.getName(), root.path("target").path("rootType").asText());
+    }
+
+    @Test
+    void blankOrNullFormatDefaultsToJsonAndFormatIsCaseInsensitive() throws Exception {
+        SingleMethodAnalysisReportService service = createService();
+
+        String nullFormat = service.render(
+                DocumentScenarioService.class.getName(),
+                "inspectFirstLine",
+                "document",
+                Document.class.getName(),
+                null
+        );
+        String blankFormat = service.render(
+                DocumentScenarioService.class.getName(),
+                "inspectFirstLine",
+                "document",
+                Document.class.getName(),
+                "   "
+        );
+        String upperJson = service.render(
+                DocumentScenarioService.class.getName(),
+                "inspectFirstLine",
+                "document",
+                Document.class.getName(),
+                "JSON"
+        );
+        String mixedMarkdown = service.render(
+                DocumentScenarioService.class.getName(),
+                "inspectFirstLine",
+                "document",
+                Document.class.getName(),
+                "Markdown"
+        );
+
+        assertTrue(objectMapper.readTree(nullFormat).path("target").isObject());
+        assertTrue(objectMapper.readTree(blankFormat).path("target").isObject());
+        assertTrue(objectMapper.readTree(upperJson).path("target").isObject());
+        assertTrue(mixedMarkdown.startsWith("# Analysis Report"));
+    }
+
+    @Test
     void missingRequiredArgumentProducesClearError() {
         SingleMethodAnalysisReportService service = createService();
 

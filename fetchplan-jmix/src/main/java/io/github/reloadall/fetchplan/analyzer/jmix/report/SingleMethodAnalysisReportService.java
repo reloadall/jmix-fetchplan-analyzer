@@ -48,24 +48,28 @@ public class SingleMethodAnalysisReportService {
         requireText(methodName, "methodName");
         requireText(rootParameterName, "rootParameterName");
 
+        String normalizedTargetClassName = targetClassName.trim();
+        String normalizedMethodName = methodName.trim();
+        String normalizedRootParameterName = rootParameterName.trim();
+
         MethodDeclaration method;
         String resolvedRootType = blankToNull(rootType);
         if (resolvedRootType == null) {
-            method = sourceMethodResolver.resolve(targetClassName, methodName, rootParameterName);
-            resolvedRootType = method.getParameterByName(rootParameterName)
+            method = sourceMethodResolver.resolve(normalizedTargetClassName, normalizedMethodName, normalizedRootParameterName);
+            resolvedRootType = method.getParameterByName(normalizedRootParameterName)
                     .map(parameter -> parameter.getType().asString())
                     .orElseThrow(() -> new IllegalArgumentException(
-                            "Root parameter not found after method resolution: " + rootParameterName
+                            "Root parameter not found after method resolution: " + normalizedRootParameterName
                     ));
         } else {
-            method = sourceMethodResolver.resolve(targetClassName, methodName, rootParameterName, resolvedRootType);
+            method = sourceMethodResolver.resolve(normalizedTargetClassName, normalizedMethodName, normalizedRootParameterName, resolvedRootType);
         }
 
-        RawTree rawTree = astPathEngine.analyze(method, rootParameterName);
+        RawTree rawTree = astPathEngine.analyze(method, normalizedRootParameterName);
         Set<String> canonicalPaths = pathTreeFlattener.flatten(rawTreeNormalizer.normalize(rawTree));
 
         return analysisReportFactory.fromSingleMethodAnalysis(
-                new AnalysisTarget(targetClassName, methodName, rootParameterName, resolvedRootType),
+                new AnalysisTarget(normalizedTargetClassName, normalizedMethodName, normalizedRootParameterName, resolvedRootType),
                 canonicalPaths
         );
     }
