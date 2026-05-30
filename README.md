@@ -31,11 +31,11 @@ the tool produces:
 - raw analysis tree
 - normalized canonical paths
 - comparison report:
-    - Covered
-    - Missing
-    - Extra
-    - Uncertain
-    - Declared not confirmed breakdown
+  - Covered
+  - Missing
+  - Extra
+  - Uncertain
+  - Declared not confirmed breakdown
 
 ## Current capabilities
 
@@ -204,6 +204,16 @@ build/distributions/fetchplan-claude-kit-0.1.0.zip
 Unpack the ZIP into a target project root. It creates `.claude/...` and `docs/fetchplan-claude/...` files for Claude-assisted review workflows.
 
 The target project must already provide `fetchplanAnalyzeMethod`. The Claude kit is optional developer tooling and is not runtime addon code.
+
+#### Claude-assisted workflows
+
+The kit can help with day-to-day project review and with collecting feedback for improving the analyzer:
+
+- `fetchplan-audit` runs the addon and explains canonical paths, unsupported patterns, warnings, and limits.
+- `fetchplan-independent-reviewer` independently inspects source code, prepares expected paths, runs comparison mode, and explains matched, missing, and extra paths.
+- Useful feedback artifacts can include addon JSON, an expected paths file, comparison JSON, and short notes about surprising or unsupported cases.
+
+Claude output is review assistance, not proof of fetch-plan correctness. See `tools/claude-kit/README.md` and `tools/claude-kit/src/main/dist/docs/fetchplan-claude/README.md` for details.
 
 ## Non-goals for current version
 
