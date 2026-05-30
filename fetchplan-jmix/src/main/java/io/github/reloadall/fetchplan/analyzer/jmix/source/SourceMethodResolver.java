@@ -64,6 +64,47 @@ public class SourceMethodResolver {
         return candidates.get(0);
     }
 
+    public MethodDeclaration resolve(String targetClassName,
+                                     String methodName,
+                                     String rootParamName) {
+        Objects.requireNonNull(targetClassName, "targetClassName is null");
+        Objects.requireNonNull(methodName, "methodName is null");
+        Objects.requireNonNull(rootParamName, "rootParamName is null");
+
+        CompilationUnit compilationUnit = sourceAnalysisCache.findJavaFile(targetClassName)
+                .map(sourceAnalysisCache::getCompilationUnit)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Java source file not found for class: " + targetClassName
+                ));
+
+        String targetSimpleName = simpleName(targetClassName);
+
+        List<MethodDeclaration> candidates = compilationUnit.findAll(MethodDeclaration.class).stream()
+                .filter(method -> method.getNameAsString().equals(methodName))
+                .filter(method -> belongsToTargetType(method, targetSimpleName))
+                .filter(method -> hasParameterNamed(method, rootParamName))
+                .toList();
+
+        if (candidates.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Method not found: class=" + targetClassName +
+                            ", method=" + methodName +
+                            ", rootParamName=" + rootParamName
+            );
+        }
+
+        if (candidates.size() > 1) {
+            throw new IllegalStateException(
+                    "Ambiguous method match: class=" + targetClassName +
+                            ", method=" + methodName +
+                            ", rootParamName=" + rootParamName +
+                            ", matches=" + candidates.size()
+            );
+        }
+
+        return candidates.get(0);
+    }
+
     private boolean belongsToTargetType(MethodDeclaration method, String targetSimpleName) {
         return method.findAncestor(com.github.javaparser.ast.body.TypeDeclaration.class)
                 .map(type -> type.getNameAsString().equals(targetSimpleName))
@@ -75,6 +116,11 @@ public class SourceMethodResolver {
                                          String rootParamType) {
         return method.getParameters().stream()
                 .anyMatch(parameter -> matchesParameter(parameter, rootParamName, rootParamType));
+    }
+
+    private boolean hasParameterNamed(MethodDeclaration method, String rootParamName) {
+        return method.getParameters().stream()
+                .anyMatch(parameter -> parameter.getNameAsString().equals(rootParamName));
     }
 
     private boolean matchesParameter(Parameter parameter,
