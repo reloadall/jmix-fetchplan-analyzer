@@ -48,3 +48,14 @@ subprojects {
         enabled = false
     }
 }
+
+tasks.register('claudeKitZip', Zip) {
+    group = 'distribution'
+    description = 'Builds the optional Claude kit distribution.'
+
+    archiveBaseName = 'fetchplan-claude-kit'
+    archiveVersion = project.version.toString()
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+
+    from('tools/claude-kit/src/main/dist')
+}

@@ -18,3 +18,26 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+rootProject.tasks.register('fetchplanAnalyzeMethod', JavaExec) {
+    group = 'verification'
+    description = 'Renders a single-method Jmix fetch-plan analysis report as JSON or Markdown.'
+
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'io.github.reloadall.fetchplan.analyzer.jmix.report.SingleMethodAnalysisReportCli'
+
+    doFirst {
+        args = [
+                "fetchplan.className=${findProperty('fetchplan.className') ?: ''}",
+                "fetchplan.methodName=${findProperty('fetchplan.methodName') ?: ''}",
+                "fetchplan.rootParam=${findProperty('fetchplan.rootParam') ?: ''}",
+                "fetchplan.rootType=${findProperty('fetchplan.rootType') ?: ''}",
+                "fetchplan.format=${findProperty('fetchplan.format') ?: 'json'}",
+                "fetchplan.output=${findProperty('fetchplan.output') ?: ''}",
+                "fetchplan.expectedPaths=${findProperty('fetchplan.expectedPaths') ?: ''}",
+                "fetchplan.expectedPathsFile=${findProperty('fetchplan.expectedPathsFile') ?: ''}",
+                "fetchplan.compare=${findProperty('fetchplan.compare') ?: ''}"
+        ]
+    }
+}
