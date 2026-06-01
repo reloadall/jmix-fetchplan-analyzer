@@ -66,6 +66,29 @@ gradlew.bat fetchplanAnalyzeMethod \
   -Pfetchplan.output=build/reports/fetchplan/order-calculate-total-comparison.json
 ```
 
+## Choosing the approach (cost vs independence)
+
+This skill does not read source itself; it runs the addon task and reads small JSON. The addon performs
+the static analysis in a forked JVM, so source files never enter the main context. Pick the cheapest
+approach that answers the question:
+
+- **"What paths does the addon see for this root?"** — run the raw task to a JSON file (the
+  *Plain JSON report* section). Cheapest and fastest; no agent needed.
+- **"Does it match what I already expect?"** — run the task in comparison mode with
+  `fetchplan.expectedPathsFile` (the *Comparison with expected paths file* section). You supply the
+  expected paths; the addon computes matched/missing/extra.
+- **"Independently judge fetch-plan completeness for a large/interprocedural method."** — delegate to
+  the `fetchplan-independent-reviewer` agent. It reads the source in its own context (keeping the main
+  context clean), derives candidate expected paths with evidence/confidence, then runs comparison mode.
+
+Trade-off to keep in mind:
+
+- The agent **keeps the main context clean** (heavy source reading stays in its window) but **spends more
+  total tokens** and adds latency. It is for "must read a lot of source independently," not a default for
+  every run.
+- The matched/missing/extra arithmetic and `canonicalPaths` always come from the addon. The skill/agent
+  are wrappers; independence comes from where the *expected* paths originate, not from the wrapper itself.
+
 ## Reporting guidance
 
 When summarizing results, clearly separate:
