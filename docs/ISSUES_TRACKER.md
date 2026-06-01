@@ -1062,3 +1062,102 @@ Status values used below:
 - Guardrail:
   This is not general stream/lambda support. It does not implement `Map.forEach`, multi-parameter lambdas, arbitrary block
   statements, `filter`/`flatMap` semantics, or worker dispatch such as `workers.forEach(worker -> worker.process(document))`.
+
+---
+
+## ISSUE-033 — No Gradle plugin: the analysis task must be hand-copied into each consuming build
+
+- Status: `OPEN`
+- Area: distribution / packaging / Gradle integration
+- Found during: external consumption verification in Jmix application (`application`)
+- Summary:
+  The addon ships only runtime libraries (`fetchplan-jmix`, `fetchplan-jmix-starter`) plus the `claudeKitZip`. There is no
+  published Gradle plugin, so `fetchplanAnalyzeMethod` does not appear in a consuming project from the dependencies alone.
+  An `implementation "io.github.reloadall:fetchplan-jmix(-starter)"` dependency puts the analyzer on the application
+  classpath but registers no Gradle task (tasks live on the build classpath / in plugins, not in `implementation` deps).
+- Evidence:
+  In a downstream build with both dependencies present, `gradlew help --task fetchplanAnalyzeMethod` reports
+  `Task 'fetchplanAnalyzeMethod' not found`. The task only exists after a `JavaExec` task definition is pasted into the
+  consumer's `build.gradle`.
+- Why this matters:
+  Every consumer must copy and maintain a build-script snippet. Drift between addon CLI changes (main class, supported
+  properties, source-root forwarding) and the copied task is likely and silent.
+- Suggested next step:
+  Provide a real Gradle plugin (`java-gradle-plugin`, published to the Gradle Plugin Portal / Maven) that registers
+  `fetchplanAnalyzeMethod`, forwards `fetchplan.*` as program args and `fpa.*` as JVM system properties, and wires
+  `classpath` / `mainClass`. Consumers then only apply the plugin.
+
+---
+
+## ISSUE-034 — Standalone CLI context failed to refresh when no `FetchPlanRepository` bean is present
+
+- Status: `RESOLVED`
+- Area: standalone CLI Spring context / `FetchPlanResolver` dependency
+- Found during: external consumption verification of the published `0.1.0` artifact in a downstream Jmix application
+- Summary:
+  `SingleMethodAnalysisReportCli` bootstraps a reduced `AnnotationConfigApplicationContext` that does not bootstrap
+  jmix-core. `FetchPlanResolver` declared an eager constructor dependency on `io.jmix.core.FetchPlanRepository`. In the
+  published `0.1.0` artifact (whose CLI configuration did not yet exclude the `fetchplan`/`debug` beans), this made context
+  refresh fail before any analysis ran.
+- Evidence:
+  `UnsatisfiedDependencyException` creating `fpa_AstPathAnalyzeMBean` -> `fpa_FetchPlanResolver` ->
+  `NoSuchBeanDefinitionException: No qualifying bean of type 'io.jmix.core.FetchPlanRepository'`.
+- Resolution:
+  Changed `FetchPlanResolver` to inject `ObjectProvider<FetchPlanRepository>` and resolve lazily inside `resolve(...)`,
+  throwing a clear `IllegalStateException` only when named fetch-plan resolution is actually invoked without a repository.
+  The bean now always constructs, so context refresh succeeds in reduced/standalone contexts; real Jmix applications are
+  unaffected (repository present, behavior unchanged).
+- Regression coverage added:
+  `FetchPlanResolverIsolationTest`:
+  - a context scanning the `fetchplan` package without a `FetchPlanRepository` refreshes and the bean loads;
+  - `resolve(...)` without a repository throws a clear error naming `FetchPlanRepository`;
+  - `resolve(...)` delegates to the repository when present.
+- Related:
+  The CLI exclude filters (see ISSUE-035) are a second layer; this fix makes the coupling fail-soft regardless of them.
+
+---
+
+## ISSUE-035 — CLI context isolation relies on fragile denylist component-scan filters
+
+- Status: `OPEN`
+- Area: `SingleMethodAnalysisReportCli` configuration / component scanning
+- Found during: review of CLI context wiring while fixing ISSUE-034
+- Summary:
+  `SingleMethodAnalysisReportCliConfiguration` scans the whole `io.github.reloadall.fetchplan.analyzer.jmix` package and
+  then removes jmix-coupled beans with REGEX `excludeFilters` (the `@JmixModule` config, `debug.AstPathAnalyzeMBean`,
+  `fetchplan.*`, `compare.*`). This is a denylist: any future bean placed outside the excluded packages that injects a
+  jmix-runtime bean will silently re-break standalone CLI context refresh with an opaque `NoSuchBeanDefinitionException`
+  at consumer sites.
+- Why this matters:
+  The failure mode is silent and surfaces only when consumed externally; package-name coupling is brittle.
+- Suggested next step:
+  Prefer an allowlist (`useDefaultFilters = false` + `includeFilters` limited to the static-analysis packages the CLI
+  actually needs), or mark jmix-runtime-coupled beans with a dedicated annotation and exclude by that marker, or register
+  those beans only inside `FetchPlanAnalyzerJmixConfiguration` instead of via free component-scan. Add a CI smoke test that
+  boots the CLI configuration without jmix-core.
+
+---
+
+## ISSUE-036 — Repository/reload fetch-plan boundaries are silently out-of-scope, not surfaced as analysis limits
+
+- Status: `OPEN`
+- Area: single-method report / `analysisLimits` / interprocedural reload boundary
+- Found during: independent review of a real converter method in a downstream project
+- Summary:
+  When a method reloads an entity across a named fetch-plan boundary
+  (e.g. `dataManager.load(Id.of(...)).fetchPlan("...").one()`) and continues property access on the reloaded object, those
+  accesses are correctly excluded from the original root's paths, but the single-method JSON report does not record the
+  reload as an entry in `analysisLimits` or as uncertainty. A reviewer reading only `canonicalPaths` (with empty
+  `warnings`/`analysisLimits`) may over-read the result as a complete plan for the root.
+- Evidence:
+  For `DtoConverter.createDto(line)`, the report returned three `line`-rooted paths with
+  empty `analysisLimits`/`warnings`, while the body contains a
+  `dataManager.load(...).fetchPlan("plan")` reload whose downstream `at.*` accesses
+  are out of scope and unflagged.
+- Related:
+  ISSUE-031 added `UNKNOWN_BREAK` for unresolved path-relevant `void` calls, but its guardrail intentionally skips
+  value-returning boundary/query calls; an entity reload returning a value therefore stays unflagged.
+- Suggested next step:
+  Emit an explicit `analysisLimit` entry (e.g. "reload boundary: named fetch plan '<name>' on <type>") when
+  interprocedural analysis stops at a value-returning reload boundary derived from a tracked anchor, without changing
+  canonical-path semantics.
